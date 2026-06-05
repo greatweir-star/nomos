@@ -1,0 +1,49 @@
+{
+  "name": "nomos",
+  "version": "1.1.0",
+  "description": "nomos local-first Agent project command center",
+  "main": "electron/main.js",
+  "author": "nomos",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "start:server": "node scripts/start-server.js",
+    "test": "node --test tests/*.test.js",
+    "dist:win": "electron-builder --win portable",
+    "dist:unpacked": "electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "42.3.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "cn.nomos.desktop",
+    "productName": "nomos",
+    "artifactName": "nomos-${version}-${arch}.${ext}",
+    "electronDist": "build/electron-cache",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "backend/**/*",
+      "build/icon.png",
+      "docs/**/*",
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}
