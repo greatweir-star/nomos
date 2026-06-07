@@ -1,0 +1,351 @@
+{
+  "passCount": 43,
+  "failCount": 0,
+  "total": 43,
+  "results": [
+    {
+      "name": "初始化默认数据",
+      "input": "{}",
+      "expected": "201 or 409",
+      "actual": "409",
+      "ok": true,
+      "notes": "已初始化过"
+    },
+    {
+      "name": "GET /api/flow-templates 列表",
+      "input": "{}",
+      "expected": "200 + data 数组",
+      "actual": "\"200 3\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET /api/flow-templates?category=value_stream 筛选",
+      "input": "{}",
+      "expected": "200 + 全为 value_stream",
+      "actual": "200",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET /api/flow-templates?search=ltc 搜索",
+      "input": "{}",
+      "expected": "200 + 包含 LTC",
+      "actual": "200",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST /api/flow-templates 创建",
+      "input": "{\"name\":\"测试模板-1780826096632\",\"category\":\"value_stream\",\"description\":\"测试用流程模板\",\"stages\":[{\"name\":\"阶段一\",\"order\":1,\"description\":\"第一\",\"gate\":{\"enabled\":true,\"entryConditions\":[\"a\"],\"exitCriteria\":[\"b\"]}",
+      "expected": "201 + data.id",
+      "actual": "\"201 3825e088-e85b-46c1-96cf-36488e8ea1e8\"",
+      "ok": "3825e088-e85b-46c1-96cf-36488e8ea1e8",
+      "notes": ""
+    },
+    {
+      "name": "POST 创建同名模板",
+      "input": "{\"name\":\"测试模板-1780826096632\",\"category\":\"value_stream\",\"description\":\"测试用流程模板\",\"stages\":[{\"name\":\"阶段一\",\"order\":1,\"description\":\"第一\",\"gate\":{\"enabled\":true,\"entryConditions\":[\"a\"],\"exitCriteria\":[\"b\"]}",
+      "expected": "400 同名已存在",
+      "actual": "\"400 同名流程模板已存在\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 空阶段名",
+      "input": "{}",
+      "expected": "400 阶段名称不能为空",
+      "actual": "\"400 阶段名称不能为空\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 阶段顺序不连续",
+      "input": "{}",
+      "expected": "400 顺序错误",
+      "actual": "\"400 阶段顺序应为 1 到 2 的连续整数\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET /api/flow-templates/:id 详情",
+      "input": "{}",
+      "expected": "200 + 数据",
+      "actual": "\"200 测试模板-1780826096632\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET 不存在的模板",
+      "input": "{}",
+      "expected": "404",
+      "actual": "404",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "PATCH /api/flow-templates/:id 更新",
+      "input": "{\"description\":\"已更新描述\"}",
+      "expected": "200 + 新描述",
+      "actual": "\"200 已更新描述\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "PATCH 不存在的模板",
+      "input": "{}",
+      "expected": "404",
+      "actual": "404",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST /api/flow-templates/:id/clone 复制",
+      "input": "{}",
+      "expected": "201 + 副本",
+      "actual": "\"201 测试模板-1780826096632 副本\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST clone 不存在模板",
+      "input": "{}",
+      "expected": "404",
+      "actual": "404",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST /api/projects 带 templateId",
+      "input": "{\"templateId\":\"725daed2-70f2-44d9-8aae-28fc212dc55c\"}",
+      "expected": "201 + flowInstanceId",
+      "actual": "\"201 a07ce569-1291-4169-9283-6e66e2f029df\"",
+      "ok": "a07ce569-1291-4169-9283-6e66e2f029df",
+      "notes": ""
+    },
+    {
+      "name": "DELETE 已绑定模板",
+      "input": "{}",
+      "expected": "409 + _error",
+      "actual": "\"409 流程模板已被项目使用\"",
+      "ok": "流程模板已被项目使用",
+      "notes": ""
+    },
+    {
+      "name": "DELETE 未绑定模板（副本）",
+      "input": "{}",
+      "expected": "200 deleted",
+      "actual": "\"200 true\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "DELETE 不存在的模板",
+      "input": "{}",
+      "expected": "404",
+      "actual": "404",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST /api/projects 无 templateId",
+      "input": "{}",
+      "expected": "201 + 无 flowInstanceId",
+      "actual": "\"201 null\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET 无绑定项目",
+      "input": "{}",
+      "expected": "200 + 无 _flowInstance",
+      "actual": "\"200 无\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST /api/flow-instances 创建实例",
+      "input": "{\"templateId\":\"ac8e635f-4fb9-479a-a6c5-dda1b2559548\"}",
+      "expected": "201 + running",
+      "actual": "\"201 running\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 实例 不存在的模板",
+      "input": "{}",
+      "expected": "400",
+      "actual": "\"400 流程模板不存在\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET /api/flow-instances/:id",
+      "input": "{}",
+      "expected": "200 + 数据",
+      "actual": "\"200 项目交付\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET 不存在的实例",
+      "input": "{}",
+      "expected": "404",
+      "actual": "404",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 阶段回 receipts completed（有 gate）",
+      "input": "{\"status\":\"completed\"}",
+      "expected": "200 + review_pending",
+      "actual": "\"200 review_pending\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "推进前当前阶段状态",
+      "input": "{}",
+      "expected": "review_pending",
+      "actual": "\"review_pending\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST review reject",
+      "input": "{\"action\":\"reject\"}",
+      "expected": "200 + blocked",
+      "actual": "\"200 blocked\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST return 退回",
+      "input": "{\"reason\":\"需要返工\"}",
+      "expected": "200 + in_progress",
+      "actual": "\"200 in_progress\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 再次回执 completed",
+      "input": "{}",
+      "expected": "200 + review_pending",
+      "actual": "\"200 review_pending\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST review approve",
+      "input": "{\"action\":\"approve\"}",
+      "expected": "200 + review_pending(ready to advance)",
+      "actual": "\"200 review_pending\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST advance 推进",
+      "input": "{}",
+      "expected": "200 + stage2 in_progress",
+      "actual": "\"200 575bd46a-6b53-4bb2-b08e-8d273aa488ea in_progress\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST advance 未评审阶段推进",
+      "input": "{}",
+      "expected": "400",
+      "actual": "\"400 当前阶段尚未完成或未通过关口评审\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 回执 progress",
+      "input": "{\"status\":\"progress\"}",
+      "expected": "200 + in_progress",
+      "actual": "\"200 in_progress\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "POST 回执 failed",
+      "input": "{\"status\":\"failed\"}",
+      "expected": "200 + blocked",
+      "actual": "\"200 blocked\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "GET /api/projects/:id 返回 _flowInstance",
+      "input": "{}",
+      "expected": "200 + _flowInstance",
+      "actual": "\"200 a07ce569-1291-4169-9283-6e66e2f029df\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "数据文件版本检查",
+      "input": "{}",
+      "expected": "version === 8",
+      "actual": "8",
+      "ok": true,
+      "notes": "version=8"
+    },
+    {
+      "name": "数据文件包含 flowTemplates",
+      "input": "{}",
+      "expected": "是",
+      "actual": "true",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "数据文件包含 flowInstances",
+      "input": "{}",
+      "expected": "是",
+      "actual": "true",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "回归：创建普通项目",
+      "input": "{}",
+      "expected": "201 + 5 stages",
+      "actual": "\"201 5\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "回归：项目阶段 keys",
+      "input": "{}",
+      "expected": "prd,design,develop,test,deploy",
+      "actual": "\"prd,design,develop,test,deploy\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "回归：默认活跃阶段",
+      "input": "{}",
+      "expected": "prd in_progress",
+      "actual": "\"in_progress\"",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "回归：普通项目 advance",
+      "input": "{}",
+      "expected": "200",
+      "actual": "200",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "DELETE /api/flow-instances/:id",
+      "input": "{}",
+      "expected": "200",
+      "actual": "200",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

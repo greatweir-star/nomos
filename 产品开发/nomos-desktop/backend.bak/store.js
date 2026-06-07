@@ -84,23 +84,8 @@ function readBackupData(filePath) {
   return validateData(migrateData(data));
 }
 
-class StorageInterface {
-  load() { throw new Error("load() not implemented"); }
-  snapshot() { throw new Error("snapshot() not implemented"); }
-  save() { throw new Error("save() not implemented"); }
-  update(mutator) { throw new Error("update() not implemented"); }
-  audit(action, summary, metadata) { throw new Error("audit() not implemented"); }
-  reset() { throw new Error("reset() not implemented"); }
-  backup(options) { throw new Error("backup() not implemented"); }
-  listBackups() { throw new Error("listBackups() not implemented"); }
-  resolveBackup(fileName) { throw new Error("resolveBackup() not implemented"); }
-  inspectBackup(options) { throw new Error("inspectBackup() not implemented"); }
-  restoreBackup(options) { throw new Error("restoreBackup() not implemented"); }
-}
-
-class JsonStore extends StorageInterface {
+class JsonStore {
   constructor({ dataDir }) {
-    super();
     this.dataDir = dataDir;
     this.filePath = path.join(dataDir, "nomos-data.json");
     this.data = null;
@@ -251,4 +236,4 @@ class JsonStore extends StorageInterface {
   }
 }
 
-module.exports = { StorageInterface, JsonStore, migrateData, validateData };
+module.exports = { JsonStore, migrateData, validateData };

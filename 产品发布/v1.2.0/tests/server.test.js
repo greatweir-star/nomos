@@ -161,9 +161,7 @@ test("legacy project data migrates into the workflow model", () => {
     );
     const store = new JsonStore({ dataDir });
     const data = store.load();
-    assert.equal(data.version, 8);
-    assert.ok(Array.isArray(data.flowTemplates));
-    assert.ok(Array.isArray(data.flowInstances));
+    assert.equal(data.version, 7);
     assert.equal(data.projects[0].workflow.currentStageKey, "prd");
     assert.equal(data.projects[0].workflow.status, "active");
     assert.equal(data.projects[0].stages[0].attempt, 1);
@@ -1159,7 +1157,7 @@ test("local backups require confirmation and diagnostics expose sanitized status
 
     const diagnostics = await fetch(`${url}/api/system/diagnostics`).then((response) => response.json());
     assert.equal(diagnostics.status, "ok");
-    assert.equal(diagnostics.dataVersion, 8);
+    assert.equal(diagnostics.dataVersion, 7);
     assert.equal(diagnostics.backupCount, 1);
     assert.equal(diagnostics.projectCount, 3);
     assert.equal(diagnostics.adapters.some((adapter) => adapter.id === "alice"), true);
@@ -1208,10 +1206,6 @@ test("local backup restore validates snapshots and creates a protection backup",
 
     const project = await fetch(`${url}/api/projects/project-website`).then((response) => response.json());
     assert.notEqual(project.title, "Changed after backup");
-    const restoredDataPath = path.join(path.dirname(path.dirname(created.filePath)), "nomos-data.json");
-    const restoredData = JSON.parse(fs.readFileSync(restoredDataPath, "utf8"));
-    assert.ok(Array.isArray(restoredData.flowTemplates));
-    assert.ok(Array.isArray(restoredData.flowInstances));
     const backups = await fetch(`${url}/api/system/backups`).then((response) => response.json());
     assert.equal(backups.length, 2);
   });
@@ -1233,66 +1227,6 @@ test("local backup restore is blocked while an execution is active", () => {
       () => store.restoreBackup({ fileName: backup.fileName, confirm: true }),
       /Cannot restore a backup while local executions are active/
     );
-  } finally {
-    fs.rmSync(dataDir, { recursive: true, force: true });
-  }
-});
-
-test("legacy v7 backups inspect and restore after flow data migration", () => {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "nomos-restore-v7-"));
-  try {
-    const store = new JsonStore({ dataDir });
-    const data = store.load();
-    const backupDir = path.join(dataDir, "backups");
-    fs.mkdirSync(backupDir, { recursive: true });
-
-    const legacyData = {
-      ...data,
-      version: 7,
-      projects: [
-        createProject({
-          id: "legacy-v7-project",
-          title: "Legacy v7 project",
-          goal: "Verify legacy backup restore.",
-        }),
-      ],
-      skills: [],
-      roles: [],
-      employees: [],
-    };
-    delete legacyData.flowTemplates;
-    delete legacyData.flowInstances;
-
-    const fileName = "nomos-data-legacy-v7.json";
-    fs.writeFileSync(path.join(backupDir, fileName), `${JSON.stringify(legacyData, null, 2)}\n`, "utf8");
-
-    const inspected = store.inspectBackup({ fileName });
-    assert.equal(inspected.dataVersion, 8);
-    assert.equal(inspected.projectCount, 1);
-
-    store.update((current) => {
-      current.projects = [];
-      return current.projects;
-    });
-
-    const restored = store.restoreBackup({ fileName, confirm: true });
-    assert.equal(restored.restored, true);
-    assert.equal(restored.dataVersion, 8);
-    assert.equal(restored.projectCount, 1);
-
-    const restoredData = JSON.parse(fs.readFileSync(path.join(dataDir, "nomos-data.json"), "utf8"));
-    assert.equal(restoredData.version, 8);
-    assert.equal(restoredData.projects[0].id, "legacy-v7-project");
-    assert.ok(Array.isArray(restoredData.flowTemplates));
-    assert.ok(Array.isArray(restoredData.flowInstances));
-
-    const invalidName = "nomos-data-invalid-v7.json";
-    fs.writeFileSync(
-      path.join(backupDir, invalidName),
-      `${JSON.stringify({ ...legacyData, projects: "not-an-array" }, null, 2)}\n`,
-      "utf8",
-    );
-    assert.throws(() => store.inspectBackup({ fileName: invalidName }), /Backup projects are invalid/);
   } finally {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
@@ -1736,78 +1670,7 @@ test("default org template generation and idempotency", async () => {
   });
 });
 
-test("flow gate stage cannot advance until review is approved", async () => {
-  await withServer(async (url) => {
-    const headers = { "Content-Type": "application/json" };
-
-    const createdTemplate = await fetch(`${url}/api/flow-templates`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        name: "Gate regression flow",
-        stages: [
-          {
-            name: "Gate stage",
-            order: 1,
-            gate: {
-              enabled: true,
-              exitCriteria: ["Human review approved"],
-            },
-          },
-          {
-            name: "Next stage",
-            order: 2,
-            gate: {
-              enabled: false,
-            },
-          },
-        ],
-      }),
-    });
-    assert.equal(createdTemplate.status, 201);
-    const template = (await createdTemplate.json()).data;
-
-    const createdInstance = await fetch(`${url}/api/flow-instances`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ projectId: "project-website", templateId: template.id }),
-    });
-    assert.equal(createdInstance.status, 201);
-    const instance = (await createdInstance.json()).data;
-    const gateStage = instance.stages.find((stage) => stage.status === "in_progress");
-    assert.ok(gateStage);
-    assert.equal(gateStage.gate.enabled, true);
-
-    const submitted = await fetch(`${url}/api/flow-instances/${instance.id}/stages/${gateStage.id}/receipts`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ status: "completed", summary: "Ready for review." }),
-    });
-    assert.equal(submitted.status, 200);
-    const receipt = (await submitted.json()).data;
-    assert.equal(receipt.stage.status, "review_pending");
-    assert.equal(receipt.stage.gate.review.status, "pending");
-
-    const blocked = await fetch(`${url}/api/flow-instances/${instance.id}/advance`, { method: "POST" });
-    assert.equal(blocked.status, 400);
-    assert.match((await blocked.json()).error, /关口评审/);
-
-    const approved = await fetch(`${url}/api/flow-instances/${instance.id}/review`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ action: "approve", reviewer: "qa" }),
-    });
-    assert.equal(approved.status, 200);
-
-    const advanced = await fetch(`${url}/api/flow-instances/${instance.id}/advance`, { method: "POST" });
-    assert.equal(advanced.status, 200);
-    const advancedInstance = (await advanced.json()).data;
-    assert.equal(advancedInstance.stages.find((stage) => stage.id === gateStage.id).status, "done");
-    assert.equal(advancedInstance.stages.find((stage) => stage.order === 2).status, "in_progress");
-  });
-});
-
-test("data migration from v6 to v8 preserves existing data", async () => {
+test("data migration from v6 to v7 preserves existing data", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "nomos-migrate-"));
   try {
     // Write v6 format data
@@ -1828,12 +1691,10 @@ test("data migration from v6 to v8 preserves existing data", async () => {
     const store = new JsonStore({ dataDir });
     const data = store.load();
 
-    assert.equal(data.version, 8);
+    assert.equal(data.version, 7);
     assert.ok(Array.isArray(data.skills));
     assert.ok(Array.isArray(data.roles));
     assert.ok(Array.isArray(data.employees));
-    assert.ok(Array.isArray(data.flowTemplates));
-    assert.ok(Array.isArray(data.flowInstances));
     assert.equal(data.skills.length, 0);
     assert.equal(data.roles.length, 0);
     assert.equal(data.employees.length, 0);

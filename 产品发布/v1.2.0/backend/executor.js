@@ -106,11 +106,9 @@ function readJsonFile(filePath) {
   }
 }
 
-const { getAliceDataDir: getPlatformAliceDataDir } = require("./platform");
-
 function getAliceDataDir() {
   const pointer = readJsonFile(path.join(os.homedir(), ".alice-pointer.json"));
-  return pointer?.dataDir || getPlatformAliceDataDir();
+  return pointer?.dataDir || "D:\\Alice\\AliceData";
 }
 
 function getAliceConnection() {

@@ -1,0 +1,2806 @@
+{
+  "version": 8,
+  "createdAt": "2026-06-07T09:51:32.256Z",
+  "updatedAt": "2026-06-07T09:54:56.654Z",
+  "projects": [
+    {
+      "id": "e375cb02-db01-4f2d-9a4a-7cfeabc88c58",
+      "title": "回归测试项目",
+      "subtitle": "验证旧链路",
+      "goal": "确保原有五阶段项目正常",
+      "dueLabel": "本季度",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:54:56.652Z",
+      "updatedAt": "2026-06-07T09:54:56.653Z",
+      "stages": [
+        {
+          "id": "prd-6db415db",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "done",
+          "progress": 100,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "07d597af-5afb-47fb-9759-98a423504346",
+          "completedAt": "2026-06-07T09:54:56.653Z",
+          "blockedReason": ""
+        },
+        {
+          "id": "design-23633dff",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 12,
+          "attempt": 1,
+          "deliverableIds": [],
+          "startedAt": "2026-06-07T09:54:56.653Z",
+          "blockedReason": "",
+          "activeTaskId": "81933ac6-485d-440b-a23d-7513635f8abb"
+        },
+        {
+          "id": "develop-24c11b44",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-acc016c4",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-0602d7a7",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "576ddac0-ae82-42ff-8f2a-152bd5491f0d",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:54:56.652Z"
+        },
+        {
+          "id": "6e09852c-1e50-4419-9a63-a167def059fc",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "上一阶段已验收，正在把任务派发给设计总监：界面设计。",
+          "createdAt": "2026-06-07T09:54:56.653Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-d10f062c",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [
+        {
+          "id": "5e766d20-1567-44b8-a7d7-55e3c196a60b",
+          "fromStageKey": "prd",
+          "toStageKey": "design",
+          "taskId": "81933ac6-485d-440b-a23d-7513635f8abb",
+          "type": "handoff",
+          "reason": "手动推进",
+          "createdAt": "2026-06-07T09:54:56.653Z"
+        }
+      ],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "81933ac6-485d-440b-a23d-7513635f8abb",
+          "stageKey": "design",
+          "stageId": "design-23633dff",
+          "attempt": 1,
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "正在整理首页与文章页的高保真设计方案。",
+          "inputAssetIds": [],
+          "reason": "手动推进",
+          "createdAt": "2026-06-07T09:54:56.653Z",
+          "updatedAt": "2026-06-07T09:54:56.653Z"
+        },
+        {
+          "id": "07d597af-5afb-47fb-9759-98a423504346",
+          "stageKey": "prd",
+          "stageId": "prd-6db415db",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "completed",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:54:56.652Z",
+          "updatedAt": "2026-06-07T09:54:56.653Z",
+          "completedAt": "2026-06-07T09:54:56.653Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "design",
+        "updatedAt": "2026-06-07T09:54:56.653Z"
+      }
+    },
+    {
+      "id": "70ec817b-edd6-4db1-bb87-eda659051b93",
+      "title": "独立流程测试项目",
+      "subtitle": "测试",
+      "goal": "测试独立流程实例",
+      "dueLabel": "下周",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:54:56.642Z",
+      "updatedAt": "2026-06-07T09:54:56.642Z",
+      "stages": [
+        {
+          "id": "prd-ce74eced",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 64,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "eb8a1c08-c601-467d-93ca-216023654aa6"
+        },
+        {
+          "id": "design-f7e15f41",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "develop-e86bc509",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-c00267b2",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-eb179248",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "cc7081f7-07c0-4eed-bc76-22a779cd7689",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:54:56.642Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-c4d94e40",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "eb8a1c08-c601-467d-93ca-216023654aa6",
+          "stageKey": "prd",
+          "stageId": "prd-ce74eced",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:54:56.642Z",
+          "updatedAt": "2026-06-07T09:54:56.642Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "prd",
+        "updatedAt": "2026-06-07T09:54:56.642Z"
+      },
+      "flowInstanceId": null
+    },
+    {
+      "id": "1e2f694e-d934-49db-8955-a1d3ca40c45d",
+      "title": "绑定测试项目",
+      "subtitle": "测试",
+      "goal": "测试模板绑定",
+      "dueLabel": "本周",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:54:56.639Z",
+      "updatedAt": "2026-06-07T09:54:56.639Z",
+      "stages": [
+        {
+          "id": "prd-117fd09a",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 64,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "c905e5d9-7560-4e74-9e03-dd60e93158a7"
+        },
+        {
+          "id": "design-e54a6a65",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "develop-aca86b80",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-136f9d3a",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-15310437",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "d0016195-55a0-46a7-988a-45e4856d8cc1",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:54:56.639Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-78c37991",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "c905e5d9-7560-4e74-9e03-dd60e93158a7",
+          "stageKey": "prd",
+          "stageId": "prd-117fd09a",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:54:56.640Z",
+          "updatedAt": "2026-06-07T09:54:56.640Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "prd",
+        "updatedAt": "2026-06-07T09:54:56.639Z"
+      },
+      "flowInstanceId": "a07ce569-1291-4169-9283-6e66e2f029df"
+    },
+    {
+      "id": "eac1182a-d6a1-4692-a804-8469afab4542",
+      "title": "回归测试项目",
+      "subtitle": "验证旧链路",
+      "goal": "确保原有五阶段项目正常",
+      "dueLabel": "本季度",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:53:12.806Z",
+      "updatedAt": "2026-06-07T09:53:12.807Z",
+      "stages": [
+        {
+          "id": "prd-385c5c96",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "done",
+          "progress": 100,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "22f1eb55-f3eb-4be4-aacc-91452ed48fca",
+          "completedAt": "2026-06-07T09:53:12.807Z",
+          "blockedReason": ""
+        },
+        {
+          "id": "design-91861911",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 12,
+          "attempt": 1,
+          "deliverableIds": [],
+          "startedAt": "2026-06-07T09:53:12.807Z",
+          "blockedReason": "",
+          "activeTaskId": "4373eca8-1ec0-42b7-8746-6e6820fac610"
+        },
+        {
+          "id": "develop-4798297f",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-866b1965",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-814b9441",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "a092ecfb-1ade-4e2c-85f7-0899e8f877de",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:53:12.806Z"
+        },
+        {
+          "id": "95ff9dae-03f5-47b2-98b6-17ef13531dad",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "上一阶段已验收，正在把任务派发给设计总监：界面设计。",
+          "createdAt": "2026-06-07T09:53:12.807Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-b21ee113",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [
+        {
+          "id": "291aed01-c0fb-4f2e-9618-ec5365d411ed",
+          "fromStageKey": "prd",
+          "toStageKey": "design",
+          "taskId": "4373eca8-1ec0-42b7-8746-6e6820fac610",
+          "type": "handoff",
+          "reason": "手动推进",
+          "createdAt": "2026-06-07T09:53:12.807Z"
+        }
+      ],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "4373eca8-1ec0-42b7-8746-6e6820fac610",
+          "stageKey": "design",
+          "stageId": "design-91861911",
+          "attempt": 1,
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "正在整理首页与文章页的高保真设计方案。",
+          "inputAssetIds": [],
+          "reason": "手动推进",
+          "createdAt": "2026-06-07T09:53:12.807Z",
+          "updatedAt": "2026-06-07T09:53:12.807Z"
+        },
+        {
+          "id": "22f1eb55-f3eb-4be4-aacc-91452ed48fca",
+          "stageKey": "prd",
+          "stageId": "prd-385c5c96",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "completed",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:53:12.806Z",
+          "updatedAt": "2026-06-07T09:53:12.807Z",
+          "completedAt": "2026-06-07T09:53:12.807Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "design",
+        "updatedAt": "2026-06-07T09:53:12.807Z"
+      }
+    },
+    {
+      "id": "9e6836a5-4498-469d-8c90-f7b09026e6b9",
+      "title": "独立流程测试项目",
+      "subtitle": "测试",
+      "goal": "测试独立流程实例",
+      "dueLabel": "下周",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:53:12.799Z",
+      "updatedAt": "2026-06-07T09:53:12.799Z",
+      "stages": [
+        {
+          "id": "prd-8c0dc494",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 64,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "cb5d4ff8-07e6-4314-9a4a-97b1a55a8934"
+        },
+        {
+          "id": "design-6472eda8",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "develop-564460a1",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-a06496b0",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-83516883",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "5ee6006d-5713-451e-a771-624a86fb2cdf",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:53:12.799Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-05e22acb",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "cb5d4ff8-07e6-4314-9a4a-97b1a55a8934",
+          "stageKey": "prd",
+          "stageId": "prd-8c0dc494",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:53:12.799Z",
+          "updatedAt": "2026-06-07T09:53:12.799Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "prd",
+        "updatedAt": "2026-06-07T09:53:12.799Z"
+      },
+      "flowInstanceId": null
+    },
+    {
+      "id": "12a0a4fd-727b-46b7-a1d2-c87ec2397592",
+      "title": "绑定测试项目",
+      "subtitle": "测试",
+      "goal": "测试模板绑定",
+      "dueLabel": "本周",
+      "team": "开发团队",
+      "unread": 0,
+      "createdAt": "2026-06-07T09:53:12.797Z",
+      "updatedAt": "2026-06-07T09:53:12.797Z",
+      "stages": [
+        {
+          "id": "prd-50068203",
+          "key": "prd",
+          "title": "需求定义",
+          "description": "用户画像、页面结构、验收清单已经确认。",
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "in_progress",
+          "progress": 64,
+          "attempt": 1,
+          "deliverableIds": [],
+          "activeTaskId": "81ef0c14-fd7c-49e6-8c9d-b728f3b6d44d"
+        },
+        {
+          "id": "design-62cfcfe3",
+          "key": "design",
+          "title": "界面设计",
+          "description": "正在整理首页与文章页的高保真设计方案。",
+          "ownerId": "design-director",
+          "ownerName": "设计总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "develop-8f12e9e0",
+          "key": "develop",
+          "title": "代码开发",
+          "description": "等待设计验收后，自动派发给 Codex CLI。",
+          "ownerId": "codex-cli",
+          "ownerName": "Codex CLI",
+          "ownerType": "local",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "test-2367471f",
+          "key": "test",
+          "title": "质量检查",
+          "description": "自动化测试、页面走查与问题回流。",
+          "ownerId": "test-director",
+          "ownerName": "测试总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        },
+        {
+          "id": "deploy-7742efa9",
+          "key": "deploy",
+          "title": "发布上线",
+          "description": "生成预览环境，确认后再正式发布。",
+          "ownerId": "ops-director",
+          "ownerName": "运维总监",
+          "ownerType": "cloud",
+          "status": "waiting",
+          "progress": 0,
+          "attempt": 1,
+          "deliverableIds": []
+        }
+      ],
+      "messages": [
+        {
+          "id": "0512f1a0-dd22-42f3-b4bd-99e92eb24348",
+          "authorId": "project-steward",
+          "authorName": "项目总管",
+          "authorType": "cloud",
+          "text": "项目已创建。我会按照交付链路分派工作，并在关键节点提醒你验收。",
+          "createdAt": "2026-06-07T09:53:12.797Z"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "checkpoint-c594dffa",
+          "stageKey": "design",
+          "title": "设计方案完成后，需要你做一次确认。",
+          "description": "你可以直接批准，也可以补充修改意见，再让设计总监继续调整。",
+          "status": "waiting"
+        }
+      ],
+      "assets": [],
+      "handoffs": [],
+      "taskReceipts": [],
+      "workflowTasks": [
+        {
+          "id": "81ef0c14-fd7c-49e6-8c9d-b728f3b6d44d",
+          "stageKey": "prd",
+          "stageId": "prd-50068203",
+          "attempt": 1,
+          "ownerId": "product-director",
+          "ownerName": "产品总监",
+          "ownerType": "cloud",
+          "status": "queued",
+          "instructions": "用户画像、页面结构、验收清单已经确认。",
+          "inputAssetIds": [],
+          "reason": "",
+          "createdAt": "2026-06-07T09:53:12.797Z",
+          "updatedAt": "2026-06-07T09:53:12.797Z"
+        }
+      ],
+      "workflow": {
+        "status": "active",
+        "currentStageKey": "prd",
+        "updatedAt": "2026-06-07T09:53:12.797Z"
+      },
+      "flowInstanceId": "eb04fed7-ae05-4e73-9a51-4fcd59db7b42"
+    }
+  ],
+  "agents": [
+    {
+      "id": "project-steward",
+      "name": "项目总管",
+      "alias": "总管",
+      "role": "拆任务、调度、验收",
+      "type": "cloud",
+      "status": "online",
+      "employee": {
+        "employeeNo": "NOMOS-SI-001",
+        "employmentType": "silicon",
+        "department": "流程运营部",
+        "title": "项目总管",
+        "responsibility": "端到端拆解、调度和阶段验收"
+      },
+      "architecture": {
+        "adapterId": "alice",
+        "runtimeScope": "local",
+        "provider": "Alice",
+        "model": "MCP coordinator"
+      }
+    },
+    {
+      "id": "product-director",
+      "name": "产品总监",
+      "alias": "产品",
+      "role": "调研、PRD、范围控制",
+      "type": "cloud",
+      "status": "online",
+      "employee": {
+        "employeeNo": "NOMOS-SI-002",
+        "employmentType": "silicon",
+        "department": "产品部",
+        "title": "产品总监",
+        "responsibility": "用户研究、PRD、版本范围和价值判断"
+      },
+      "architecture": {
+        "adapterId": "tencent-hunyuan-agent",
+        "runtimeScope": "cloud",
+        "provider": "Tencent",
+        "model": "Hunyuan Agent"
+      }
+    },
+    {
+      "id": "design-director",
+      "name": "设计总监",
+      "alias": "设计",
+      "role": "界面设计、设计复核",
+      "type": "cloud",
+      "status": "online",
+      "employee": {
+        "employeeNo": "NOMOS-SI-003",
+        "employmentType": "silicon",
+        "department": "体验设计部",
+        "title": "设计总监",
+        "responsibility": "界面、交互和信息架构设计"
+      },
+      "architecture": {
+        "adapterId": "alice",
+        "runtimeScope": "local",
+        "provider": "Alice",
+        "model": "MCP coordinator"
+      }
+    },
+    {
+      "id": "test-director",
+      "name": "测试总监",
+      "alias": "测试",
+      "role": "质量检查、问题回流",
+      "type": "cloud",
+      "status": "online",
+      "employee": {
+        "employeeNo": "NOMOS-SI-004",
+        "employmentType": "silicon",
+        "department": "质量部",
+        "title": "测试总监",
+        "responsibility": "测试策略、验收报告和缺陷回流"
+      },
+      "architecture": {
+        "adapterId": "claude-code",
+        "runtimeScope": "local",
+        "provider": "Anthropic",
+        "model": "Claude Code"
+      }
+    },
+    {
+      "id": "ops-director",
+      "name": "运维总监",
+      "alias": "运维",
+      "role": "预览发布、上线确认",
+      "type": "cloud",
+      "status": "online",
+      "employee": {
+        "employeeNo": "NOMOS-SI-005",
+        "employmentType": "silicon",
+        "department": "发布运维部",
+        "title": "运维总监",
+        "responsibility": "预览、发布、回退和运行状态确认"
+      },
+      "architecture": {
+        "adapterId": "tencent-cloud-agent",
+        "runtimeScope": "cloud",
+        "provider": "Tencent Cloud",
+        "model": "Cloud Agent"
+      }
+    },
+    {
+      "id": "alice",
+      "name": "Alice",
+      "alias": "Alice",
+      "role": "本地总管 · MCP 协作",
+      "type": "local",
+      "status": "pending",
+      "paired": true,
+      "employee": {
+        "employeeNo": "NOMOS-SI-101",
+        "employmentType": "silicon",
+        "department": "本地执行部",
+        "title": "本地协作员",
+        "responsibility": "本地 MCP 协作、会话同步和任务回执"
+      },
+      "architecture": {
+        "adapterId": "alice",
+        "runtimeScope": "local",
+        "provider": "Alice",
+        "model": "MCP"
+      }
+    },
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "alias": "设计复核员",
+      "role": "设计复核 · 可调用",
+      "type": "local",
+      "status": "online",
+      "paired": true,
+      "employee": {
+        "employeeNo": "NOMOS-SI-102",
+        "employmentType": "silicon",
+        "department": "本地执行部",
+        "title": "代码与设计复核员",
+        "responsibility": "代码阅读、方案复核和测试建议"
+      },
+      "architecture": {
+        "adapterId": "claude-code",
+        "runtimeScope": "local",
+        "provider": "Anthropic",
+        "model": "Claude Code CLI"
+      }
+    },
+    {
+      "id": "codex-cli",
+      "name": "Codex CLI",
+      "alias": "开发执行器",
+      "role": "代码仓库 · 等待派发",
+      "type": "local",
+      "status": "online",
+      "paired": true,
+      "employee": {
+        "employeeNo": "NOMOS-SI-103",
+        "employmentType": "silicon",
+        "department": "本地执行部",
+        "title": "开发工程师",
+        "responsibility": "代码修改、自动化测试和本地仓库操作"
+      },
+      "architecture": {
+        "adapterId": "codex-cli",
+        "runtimeScope": "local",
+        "provider": "OpenAI",
+        "model": "Codex CLI"
+      }
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "alias": "桌面助理",
+      "role": "桌面操作 · 待网关配置",
+      "type": "local",
+      "status": "pending",
+      "paired": true,
+      "employee": {
+        "employeeNo": "NOMOS-SI-104",
+        "employmentType": "silicon",
+        "department": "本地执行部",
+        "title": "桌面操作员",
+        "responsibility": "桌面级工具调用和插件执行"
+      },
+      "architecture": {
+        "adapterId": "openclaw",
+        "runtimeScope": "local",
+        "provider": "OpenClaw",
+        "model": "Local Gateway"
+      }
+    },
+    {
+      "id": "tencent-yuanqi-agent",
+      "name": "腾讯元器客服专员",
+      "alias": "元器",
+      "role": "知识库问答 · 云端待接入",
+      "type": "cloud",
+      "status": "pending",
+      "employee": {
+        "employeeNo": "NOMOS-SI-201",
+        "employmentType": "silicon",
+        "department": "客户运营部",
+        "title": "云端客服专员",
+        "responsibility": "知识库问答、客户线索初筛和标准化回复"
+      },
+      "architecture": {
+        "adapterId": "tencent-yuanqi",
+        "runtimeScope": "cloud",
+        "provider": "Tencent",
+        "model": "Yuanqi Agent"
+      }
+    },
+    {
+      "id": "tencent-hunyuan-analyst",
+      "name": "腾讯混元分析员",
+      "alias": "混元分析",
+      "role": "内容与数据分析 · 云端待接入",
+      "type": "cloud",
+      "status": "pending",
+      "employee": {
+        "employeeNo": "NOMOS-SI-202",
+        "employmentType": "silicon",
+        "department": "经营分析部",
+        "title": "云端分析员",
+        "responsibility": "内容分析、经营洞察和报告生成"
+      },
+      "architecture": {
+        "adapterId": "tencent-hunyuan-agent",
+        "runtimeScope": "cloud",
+        "provider": "Tencent",
+        "model": "Hunyuan Agent"
+      }
+    }
+  ],
+  "agentAdapters": {
+    "alice": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "codex-cli": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "claude-code": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "openclaw": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "tencent-yuanqi": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "tencent-hunyuan-agent": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "tencent-cloud-agent": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    },
+    "custom-cloud-agent": {
+      "status": "unconfigured",
+      "endpoint": "",
+      "workspace": "",
+      "tokenConfigured": false,
+      "updatedAt": null
+    }
+  },
+  "bridge": {
+    "id": "desktop-bridge",
+    "status": "offline",
+    "pairedAt": null,
+    "command": "nomos bridge pair --workspace local",
+    "allowedWorkspaces": [],
+    "adapterCommands": {}
+  },
+  "executions": [],
+  "skills": [
+    {
+      "id": "0ad84f70-81d8-49b5-8ba2-fa2238417d46",
+      "name": "战略规划",
+      "description": "制定中长期战略目标和路径",
+      "category": "role-specific",
+      "level": 4,
+      "source": "huawei_methodology",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "e669630c-6fe0-42b2-b122-fe0fe6c45a0b",
+      "name": "经营分析",
+      "description": "分析经营数据，识别增长机会和风险",
+      "category": "role-specific",
+      "level": 3,
+      "source": "huawei_methodology",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "c7147ac4-75fa-439b-a5c8-32ad90fdb678",
+      "name": "决策评审",
+      "description": "对重大决策进行结构化评审",
+      "category": "role-specific",
+      "level": 3,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "e1a0745a-a138-4c15-add0-36fe18980b51",
+      "name": "内容创作",
+      "description": "撰写营销文案、社交媒体内容和品牌故事",
+      "category": "general",
+      "level": 2,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "fc117c45-ac43-41c9-8e21-2f00e964b840",
+      "name": "投放分析",
+      "description": "分析广告投放效果，优化投放策略",
+      "category": "role-specific",
+      "level": 3,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "3615f1e2-6317-4364-bf64-011d89bbe7ae",
+      "name": "品牌管理",
+      "description": "维护品牌一致性，管理品牌资产",
+      "category": "role-specific",
+      "level": 3,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "6e8dcc43-b83f-4366-91e7-f5339c189415",
+      "name": "客户沟通",
+      "description": "与客户进行有效的需求沟通和关系维护",
+      "category": "general",
+      "level": 2,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "37ed6e91-17d2-4329-baa3-20cb83a0f32e",
+      "name": "商机评估",
+      "description": "评估商机价值和可行性",
+      "category": "role-specific",
+      "level": 2,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "2637b979-cea7-4e15-8c8c-0f00cef0b526",
+      "name": "报价管理",
+      "description": "制定和管理报价方案",
+      "category": "role-specific",
+      "level": 2,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "d85d27f1-44ab-4d16-87a9-aed5f81d7112",
+      "name": "产品规划",
+      "description": "制定产品路线图和功能优先级",
+      "category": "role-specific",
+      "level": 3,
+      "source": "huawei_methodology",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "2ea09a7b-6fed-4169-a2bf-4d81b4ee9ad9",
+      "name": "前端开发",
+      "description": "使用现代前端框架进行产品开发",
+      "category": "role-specific",
+      "level": 2,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "156cc1c6-2571-4529-8374-b99546195e3e",
+      "name": "需求分析",
+      "description": "从用户场景中提炼结构化需求",
+      "category": "role-specific",
+      "level": 2,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "379b268b-6102-4b86-9476-3a32650e82bb",
+      "name": "项目管理",
+      "description": "规划、执行和监控项目全生命周期",
+      "category": "general",
+      "level": 3,
+      "source": "huawei_methodology",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "f9b4b475-cbfd-4a21-a557-7f5964d5f91d",
+      "name": "交付跟踪",
+      "description": "跟踪交付物状态和进度",
+      "category": "role-specific",
+      "level": 2,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "fcc14bcc-e5fe-4a60-9733-cdfea07a5fb8",
+      "name": "质量保障",
+      "description": "确保交付物满足质量标准",
+      "category": "role-specific",
+      "level": 2,
+      "source": "huawei_methodology",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "ac8454a6-c9cb-4983-9c85-a7c509e3be38",
+      "name": "财务审核",
+      "description": "审核财务报表和预算执行",
+      "category": "role-specific",
+      "level": 3,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "fd7216c6-dad9-4a7d-8317-5b236320776b",
+      "name": "合同审查",
+      "description": "审查合同条款的合规性和风险",
+      "category": "role-specific",
+      "level": 3,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "7eeaff2c-525e-4414-b627-984498c46011",
+      "name": "采购管理",
+      "description": "管理采购流程和供应商关系",
+      "category": "role-specific",
+      "level": 2,
+      "source": "common_base",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "3d25317d-d355-4080-8f86-e1bd56ef5f25",
+      "name": "AgentOps",
+      "description": "管理和运维AI智能体，监控运行状态",
+      "category": "role-specific",
+      "level": 3,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "b353a737-4c5a-414b-ab40-d5181ef3f1ee",
+      "name": "知识库管理",
+      "description": "维护企业知识库的内容质量和结构",
+      "category": "role-specific",
+      "level": 2,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "6b01126a-ddc7-4fd7-ab19-6f2f3df09080",
+      "name": "权限审计",
+      "description": "审计系统权限配置和访问记录",
+      "category": "role-specific",
+      "level": 3,
+      "source": "org_practice",
+      "tags": [],
+      "applicableFlows": [],
+      "riskBoundary": "",
+      "evidence": [],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    }
+  ],
+  "roles": [
+    {
+      "id": "5ba2775f-3760-46da-a0c1-c31d3592480a",
+      "name": "CEO/总经理",
+      "description": "负责公司整体经营决策和战略方向",
+      "family": "经营与战略",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "制定公司战略",
+        "经营决策",
+        "组织文化建设"
+      ],
+      "skillIds": [
+        "0ad84f70-81d8-49b5-8ba2-fa2238417d46",
+        "e669630c-6fe0-42b2-b122-fe0fe6c45a0b",
+        "c7147ac4-75fa-439b-a5c8-32ad90fdb678"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "战略目标可度量、经营计划可分解、决策有记录可追溯",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "b317dc24-3ac8-4cf5-86d0-98e68ecbc509",
+      "name": "市场负责人",
+      "description": "负责品牌建设、市场推广和增长策略",
+      "family": "市场与增长",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "品牌管理",
+        "投放策略",
+        "内容规划"
+      ],
+      "skillIds": [
+        "e1a0745a-a138-4c15-add0-36fe18980b51",
+        "fc117c45-ac43-41c9-8e21-2f00e964b840",
+        "3615f1e2-6317-4364-bf64-011d89bbe7ae"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "品牌曝光度可度量、投放ROI可追踪、内容产出有节奏",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+      "name": "销售/客户经理",
+      "description": "负责客户开拓、商机跟进和关系维护",
+      "family": "销售与客户",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "客户开拓",
+        "商机评估",
+        "报价与签约"
+      ],
+      "skillIds": [
+        "6e8dcc43-b83f-4366-91e7-f5339c189415",
+        "37ed6e91-17d2-4329-baa3-20cb83a0f32e",
+        "2637b979-cea7-4e15-8c8c-0f00cef0b526"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "客户覆盖率达标、商机转化率可追踪、签约周期可控",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+      "name": "产品经理",
+      "description": "负责产品规划、需求分析和版本管理",
+      "family": "产品与研发",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "产品规划",
+        "需求分析",
+        "版本管理"
+      ],
+      "skillIds": [
+        "d85d27f1-44ab-4d16-87a9-aed5f81d7112",
+        "156cc1c6-2571-4529-8374-b99546195e3e",
+        "2ea09a7b-6fed-4169-a2bf-4d81b4ee9ad9"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "PRD 可开发、需求可追踪、版本可交付",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "a31256d8-d069-4d69-a135-a645b2b5692c",
+      "name": "研发工程师",
+      "description": "负责代码开发、技术架构和代码质量",
+      "family": "产品与研发",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "代码开发",
+        "技术方案",
+        "代码评审"
+      ],
+      "skillIds": [
+        "2ea09a7b-6fed-4169-a2bf-4d81b4ee9ad9",
+        "156cc1c6-2571-4529-8374-b99546195e3e"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "代码可部署、测试覆盖率达标、技术债务可控",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "f197fed5-7b6e-42b4-91cd-76a6ba130414",
+      "name": "项目经理",
+      "description": "负责项目交付、进度管理和质量保障",
+      "family": "交付与运营",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "项目规划",
+        "交付跟踪",
+        "质量保障"
+      ],
+      "skillIds": [
+        "379b268b-6102-4b86-9476-3a32650e82bb",
+        "f9b4b475-cbfd-4a21-a557-7f5964d5f91d",
+        "fcc14bcc-e5fe-4a60-9733-cdfea07a5fb8"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "项目按时交付、质量指标达标、客户验收通过",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "e3a829df-1bf2-4f89-b41c-668896b9f709",
+      "name": "财务/法务",
+      "description": "负责财务审核、合同审查和采购管理",
+      "family": "职能支撑",
+      "type": "carbon",
+      "isDefault": true,
+      "responsibilities": [
+        "财务审核",
+        "合同审查",
+        "采购管理"
+      ],
+      "skillIds": [
+        "ac8454a6-c9cb-4983-9c85-a7c509e3be38",
+        "fd7216c6-dad9-4a7d-8317-5b236320776b",
+        "7eeaff2c-525e-4414-b627-984498c46011"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "财务合规、合同风险可控、采购流程规范",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "9832d877-7f7e-4a00-8502-407893d2c530",
+      "name": "智能体管理员",
+      "description": "负责 Agent 运维、知识库管理和权限审计",
+      "family": "AI 与平台",
+      "type": "hybrid",
+      "isDefault": true,
+      "responsibilities": [
+        "Agent运维",
+        "知识库管理",
+        "权限审计"
+      ],
+      "skillIds": [
+        "3d25317d-d355-4080-8f86-e1bd56ef5f25",
+        "b353a737-4c5a-414b-ab40-d5181ef3f1ee",
+        "6b01126a-ddc7-4fd7-ab19-6f2f3df09080"
+      ],
+      "skillLevelOverrides": {},
+      "permissions": {},
+      "acceptanceCriteria": "Agent可用率达标、知识库更新及时、权限变更可追溯",
+      "flowNotes": "",
+      "flowMatrix": [],
+      "carbonSiliconRatio": {
+        "carbon": 0,
+        "silicon": 0,
+        "hybrid": 0
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    }
+  ],
+  "employees": [],
+  "flowTemplates": [
+    {
+      "id": "725daed2-70f2-44d9-8aae-28fc212dc55c",
+      "name": "LTC 轻量版",
+      "category": "value_stream",
+      "description": "线索到回款轻量流程，适用于中小企业销售场景",
+      "isDefault": true,
+      "stages": [
+        {
+          "id": "429ab852-ef77-471e-be1a-40a74c52c1b2",
+          "name": "线索管理",
+          "order": 1,
+          "description": "收集、清洗和评分销售线索",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "线索量 ≥ 10"
+            ],
+            "exitCriteria": [
+              "线索评分完成",
+              "高意向线索已标记"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            }
+          ],
+          "inputs": [
+            "潜在客户名单",
+            "市场活动数据"
+          ],
+          "outputs": [
+            "评分后的线索列表"
+          ]
+        },
+        {
+          "id": "15623cdb-3dac-4a86-93ac-e3aae76a9ed1",
+          "name": "商机评估",
+          "order": 2,
+          "description": "评估商机价值和可行性，确定是否投入资源跟进",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "高意向线索已确认"
+            ],
+            "exitCriteria": [
+              "商机评分 ≥ 60",
+              "竞品分析完成"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "评分后的线索",
+            "客户需求描述"
+          ],
+          "outputs": [
+            "商机评估报告"
+          ]
+        },
+        {
+          "id": "08582b07-7258-4f78-9e90-ad29364057f1",
+          "name": "方案设计",
+          "order": 3,
+          "description": "根据客户需求制定解决方案和报价",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "商机评估通过"
+            ],
+            "exitCriteria": [
+              "方案文档完成",
+              "报价单已生成"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "a31256d8-d069-4d69-a135-a645b2b5692c",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "商机评估报告",
+            "客户需求清单"
+          ],
+          "outputs": [
+            "解决方案文档",
+            "报价单"
+          ]
+        },
+        {
+          "id": "ced5eb74-1c59-4f3e-ab8a-a76821125140",
+          "name": "合同签订",
+          "order": 4,
+          "description": "合同谈判、审批和签署",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "客户确认方案"
+            ],
+            "exitCriteria": [
+              "合同已签署",
+              "回款计划确认"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "e3a829df-1bf2-4f89-b41c-668896b9f709",
+              "raciRole": "accountable"
+            }
+          ],
+          "inputs": [
+            "报价单",
+            "方案文档"
+          ],
+          "outputs": [
+            "已签署合同"
+          ]
+        }
+      ],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "ac8e635f-4fb9-479a-a6c5-dda1b2559548",
+      "name": "项目交付",
+      "category": "enabling_stream",
+      "description": "标准项目交付流程，适用于产品开发和实施项目",
+      "isDefault": true,
+      "stages": [
+        {
+          "id": "3db8b289-3873-453b-9dad-a8c0067a92ed",
+          "name": "需求定义",
+          "order": 1,
+          "description": "明确项目目标、范围和验收标准",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "项目立项完成"
+            ],
+            "exitCriteria": [
+              "需求文档已确认",
+              "验收标准达成一致"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "f197fed5-7b6e-42b4-91cd-76a6ba130414",
+              "raciRole": "accountable"
+            }
+          ],
+          "inputs": [
+            "项目章程",
+            "客户原始需求"
+          ],
+          "outputs": [
+            "需求规格说明书",
+            "验收清单"
+          ]
+        },
+        {
+          "id": "c28a3aaf-f9fb-458f-b6f2-8335fab95641",
+          "name": "方案设计",
+          "order": 2,
+          "description": "制定技术方案和实施计划",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "需求文档已评审通过"
+            ],
+            "exitCriteria": [
+              "技术方案评审通过",
+              "实施计划确认"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "a31256d8-d069-4d69-a135-a645b2b5692c",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "需求规格说明书"
+          ],
+          "outputs": [
+            "技术方案文档",
+            "项目计划"
+          ]
+        },
+        {
+          "id": "6bf51198-a10d-4f0d-9e3b-82559cdf0e2e",
+          "name": "开发实施",
+          "order": 3,
+          "description": "按方案进行开发和部署",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "技术方案已确认"
+            ],
+            "exitCriteria": [
+              "功能开发完成",
+              "测试用例全部通过"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "a31256d8-d069-4d69-a135-a645b2b5692c",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "f197fed5-7b6e-42b4-91cd-76a6ba130414",
+              "raciRole": "accountable"
+            }
+          ],
+          "inputs": [
+            "技术方案文档",
+            "项目计划"
+          ],
+          "outputs": [
+            "可交付产品",
+            "测试报告"
+          ]
+        },
+        {
+          "id": "c246152a-0595-44da-a3cf-8e9647243145",
+          "name": "验收交付",
+          "order": 4,
+          "description": "客户验收和正式交付",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "测试报告已通过"
+            ],
+            "exitCriteria": [
+              "客户验收签字",
+              "交付物清单确认"
+            ]
+          },
+          "roleResponsibilities": [
+            {
+              "roleId": "f197fed5-7b6e-42b4-91cd-76a6ba130414",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "可交付产品",
+            "测试报告"
+          ],
+          "outputs": [
+            "验收报告",
+            "交付确认单"
+          ]
+        }
+      ],
+      "createdAt": "2026-06-07T09:53:12.780Z",
+      "updatedAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "9d786162-b56c-4e81-9fbb-594efea4795e",
+      "name": "测试模板-1780825992789",
+      "category": "value_stream",
+      "description": "已更新描述",
+      "isDefault": false,
+      "stages": [
+        {
+          "id": "6b0e8468-891f-4ac7-8913-2e3ab9081600",
+          "name": "阶段一",
+          "order": 1,
+          "description": "第一",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "a"
+            ],
+            "exitCriteria": [
+              "b"
+            ]
+          },
+          "roleResponsibilities": [],
+          "inputs": [],
+          "outputs": []
+        },
+        {
+          "id": "4e337f84-c377-4e65-8288-8cf0ecfb4255",
+          "name": "阶段二",
+          "order": 2,
+          "description": "第二",
+          "gate": {
+            "enabled": false,
+            "entryConditions": [],
+            "exitCriteria": []
+          },
+          "roleResponsibilities": [],
+          "inputs": [],
+          "outputs": []
+        }
+      ],
+      "createdAt": "2026-06-07T09:53:12.790Z",
+      "updatedAt": "2026-06-07T09:53:12.793Z"
+    },
+    {
+      "id": "3825e088-e85b-46c1-96cf-36488e8ea1e8",
+      "name": "测试模板-1780826096632",
+      "category": "value_stream",
+      "description": "已更新描述",
+      "isDefault": false,
+      "stages": [
+        {
+          "id": "550f0665-c312-40b8-8f4f-4f4da96fa1ff",
+          "name": "阶段一",
+          "order": 1,
+          "description": "第一",
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "a"
+            ],
+            "exitCriteria": [
+              "b"
+            ]
+          },
+          "roleResponsibilities": [],
+          "inputs": [],
+          "outputs": []
+        },
+        {
+          "id": "de4ec516-21e1-44ce-a29a-0a222301e278",
+          "name": "阶段二",
+          "order": 2,
+          "description": "第二",
+          "gate": {
+            "enabled": false,
+            "entryConditions": [],
+            "exitCriteria": []
+          },
+          "roleResponsibilities": [],
+          "inputs": [],
+          "outputs": []
+        }
+      ],
+      "createdAt": "2026-06-07T09:54:56.633Z",
+      "updatedAt": "2026-06-07T09:54:56.637Z"
+    }
+  ],
+  "flowInstances": [
+    {
+      "id": "eb04fed7-ae05-4e73-9a51-4fcd59db7b42",
+      "projectId": "12a0a4fd-727b-46b7-a1d2-c87ec2397592",
+      "templateId": "725daed2-70f2-44d9-8aae-28fc212dc55c",
+      "templateName": "LTC 轻量版",
+      "status": "running",
+      "currentStageId": "50b06afe-2a26-4da9-aa36-c0168ce33ec3",
+      "stages": [
+        {
+          "id": "50b06afe-2a26-4da9-aa36-c0168ce33ec3",
+          "templateStageId": "429ab852-ef77-471e-be1a-40a74c52c1b2",
+          "name": "线索管理",
+          "order": 1,
+          "description": "收集、清洗和评分销售线索",
+          "status": "in_progress",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            }
+          ],
+          "inputs": [
+            "潜在客户名单",
+            "市场活动数据"
+          ],
+          "outputs": [
+            "评分后的线索列表"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "线索量 ≥ 10"
+            ],
+            "exitCriteria": [
+              "线索评分完成",
+              "高意向线索已标记"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": "2026-06-07T09:53:12.797Z",
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "cf9781ba-d9c0-4acd-ad64-ff624d70b63e",
+          "templateStageId": "15623cdb-3dac-4a86-93ac-e3aae76a9ed1",
+          "name": "商机评估",
+          "order": 2,
+          "description": "评估商机价值和可行性，确定是否投入资源跟进",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "评分后的线索",
+            "客户需求描述"
+          ],
+          "outputs": [
+            "商机评估报告"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "高意向线索已确认"
+            ],
+            "exitCriteria": [
+              "商机评分 ≥ 60",
+              "竞品分析完成"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "d61e157b-afa9-45ce-bbc1-daffe88ca896",
+          "templateStageId": "08582b07-7258-4f78-9e90-ad29364057f1",
+          "name": "方案设计",
+          "order": 3,
+          "description": "根据客户需求制定解决方案和报价",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "a31256d8-d069-4d69-a135-a645b2b5692c",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "商机评估报告",
+            "客户需求清单"
+          ],
+          "outputs": [
+            "解决方案文档",
+            "报价单"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "商机评估通过"
+            ],
+            "exitCriteria": [
+              "方案文档完成",
+              "报价单已生成"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "564dbb6e-2c3a-4d95-9df8-2fe1c8b66db5",
+          "templateStageId": "ced5eb74-1c59-4f3e-ab8a-a76821125140",
+          "name": "合同签订",
+          "order": 4,
+          "description": "合同谈判、审批和签署",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "e3a829df-1bf2-4f89-b41c-668896b9f709",
+              "raciRole": "accountable"
+            }
+          ],
+          "inputs": [
+            "报价单",
+            "方案文档"
+          ],
+          "outputs": [
+            "已签署合同"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "客户确认方案"
+            ],
+            "exitCriteria": [
+              "合同已签署",
+              "回款计划确认"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        }
+      ],
+      "startedAt": "2026-06-07T09:53:12.797Z",
+      "completedAt": null,
+      "updatedAt": "2026-06-07T09:53:12.797Z"
+    },
+    {
+      "id": "a07ce569-1291-4169-9283-6e66e2f029df",
+      "projectId": "1e2f694e-d934-49db-8955-a1d3ca40c45d",
+      "templateId": "725daed2-70f2-44d9-8aae-28fc212dc55c",
+      "templateName": "LTC 轻量版",
+      "status": "running",
+      "currentStageId": "4bf0669b-87fb-4ffa-9c6f-a3e099f49ace",
+      "stages": [
+        {
+          "id": "4bf0669b-87fb-4ffa-9c6f-a3e099f49ace",
+          "templateStageId": "429ab852-ef77-471e-be1a-40a74c52c1b2",
+          "name": "线索管理",
+          "order": 1,
+          "description": "收集、清洗和评分销售线索",
+          "status": "in_progress",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            }
+          ],
+          "inputs": [
+            "潜在客户名单",
+            "市场活动数据"
+          ],
+          "outputs": [
+            "评分后的线索列表"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "线索量 ≥ 10"
+            ],
+            "exitCriteria": [
+              "线索评分完成",
+              "高意向线索已标记"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": "2026-06-07T09:54:56.640Z",
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "0dadfa53-f677-4430-a57c-8eeb53b0db13",
+          "templateStageId": "15623cdb-3dac-4a86-93ac-e3aae76a9ed1",
+          "name": "商机评估",
+          "order": 2,
+          "description": "评估商机价值和可行性，确定是否投入资源跟进",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "评分后的线索",
+            "客户需求描述"
+          ],
+          "outputs": [
+            "商机评估报告"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "高意向线索已确认"
+            ],
+            "exitCriteria": [
+              "商机评分 ≥ 60",
+              "竞品分析完成"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "857a189a-b4d5-47f7-ae2f-4c26f6d863a8",
+          "templateStageId": "08582b07-7258-4f78-9e90-ad29364057f1",
+          "name": "方案设计",
+          "order": 3,
+          "description": "根据客户需求制定解决方案和报价",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "af1d0839-f7d9-43ed-ba54-cc267904361a",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "a31256d8-d069-4d69-a135-a645b2b5692c",
+              "raciRole": "consulted"
+            }
+          ],
+          "inputs": [
+            "商机评估报告",
+            "客户需求清单"
+          ],
+          "outputs": [
+            "解决方案文档",
+            "报价单"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "商机评估通过"
+            ],
+            "exitCriteria": [
+              "方案文档完成",
+              "报价单已生成"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        },
+        {
+          "id": "181eabcb-b6bd-41da-b7c9-325082041d0f",
+          "templateStageId": "ced5eb74-1c59-4f3e-ab8a-a76821125140",
+          "name": "合同签订",
+          "order": 4,
+          "description": "合同谈判、审批和签署",
+          "status": "pending",
+          "roleResponsibilities": [
+            {
+              "roleId": "f9be22a0-079b-44f0-838f-86e65b30d09e",
+              "raciRole": "responsible"
+            },
+            {
+              "roleId": "e3a829df-1bf2-4f89-b41c-668896b9f709",
+              "raciRole": "accountable"
+            }
+          ],
+          "inputs": [
+            "报价单",
+            "方案文档"
+          ],
+          "outputs": [
+            "已签署合同"
+          ],
+          "gate": {
+            "enabled": true,
+            "entryConditions": [
+              "客户确认方案"
+            ],
+            "exitCriteria": [
+              "合同已签署",
+              "回款计划确认"
+            ],
+            "review": {
+              "status": "pending",
+              "reviewer": null,
+              "comment": null,
+              "reviewedAt": null
+            }
+          },
+          "startedAt": null,
+          "completedAt": null,
+          "blockedReason": "",
+          "attempt": 1
+        }
+      ],
+      "startedAt": "2026-06-07T09:54:56.640Z",
+      "completedAt": null,
+      "updatedAt": "2026-06-07T09:54:56.640Z"
+    }
+  ],
+  "audit": [
+    {
+      "id": "a66e8632-f2c3-4c5d-bc13-fefe56077259",
+      "action": "flow-instance.delete",
+      "summary": "删除流程实例",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc"
+      },
+      "createdAt": "2026-06-07T09:54:56.654Z"
+    },
+    {
+      "id": "cd5c9378-0688-4f10-896f-c93887ec9094",
+      "action": "project.advance",
+      "summary": "推进项目：回归测试项目",
+      "metadata": {
+        "projectId": "e375cb02-db01-4f2d-9a4a-7cfeabc88c58"
+      },
+      "createdAt": "2026-06-07T09:54:56.653Z"
+    },
+    {
+      "id": "0939224e-653e-454f-a14a-5932528baebf",
+      "action": "project.create",
+      "summary": "创建项目：回归测试项目",
+      "metadata": {
+        "projectId": "e375cb02-db01-4f2d-9a4a-7cfeabc88c58",
+        "templateId": null
+      },
+      "createdAt": "2026-06-07T09:54:56.652Z"
+    },
+    {
+      "id": "a39eb7a6-e8f9-4f69-9e5c-94aa172546da",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：failed",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "stageId": "575bd46a-6b53-4bb2-b08e-8d273aa488ea",
+        "status": "failed"
+      },
+      "createdAt": "2026-06-07T09:54:56.651Z"
+    },
+    {
+      "id": "84e966d9-c25b-4571-9e35-780732017d01",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：progress",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "stageId": "575bd46a-6b53-4bb2-b08e-8d273aa488ea",
+        "status": "progress"
+      },
+      "createdAt": "2026-06-07T09:54:56.650Z"
+    },
+    {
+      "id": "66ae9460-9bae-4306-bbd9-37e354b9076d",
+      "action": "flow-instance.advance",
+      "summary": "推进流程实例到下一阶段",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "currentStageId": "575bd46a-6b53-4bb2-b08e-8d273aa488ea",
+        "status": "running"
+      },
+      "createdAt": "2026-06-07T09:54:56.649Z"
+    },
+    {
+      "id": "eac16ae1-2bac-444b-b2ca-0c9901b8482a",
+      "action": "flow-instance.review",
+      "summary": "关口评审：approve",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "action": "approve"
+      },
+      "createdAt": "2026-06-07T09:54:56.648Z"
+    },
+    {
+      "id": "66950ad2-85ef-4e7e-9569-223fff829b53",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：completed",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "stageId": "2649a2e4-7b28-4f61-846f-fac805df3ee8",
+        "status": "completed"
+      },
+      "createdAt": "2026-06-07T09:54:56.648Z"
+    },
+    {
+      "id": "15d878f6-9e70-4019-93c2-8146081a4ebd",
+      "action": "flow-instance.return",
+      "summary": "退回流程阶段",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "reason": "需要返工"
+      },
+      "createdAt": "2026-06-07T09:54:56.647Z"
+    },
+    {
+      "id": "51cf83d6-b20e-4157-b974-205176b452d1",
+      "action": "flow-instance.review",
+      "summary": "关口评审：reject",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "action": "reject"
+      },
+      "createdAt": "2026-06-07T09:54:56.646Z"
+    },
+    {
+      "id": "2dddad91-1942-40a4-837d-758787afaed8",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：completed",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "stageId": "2649a2e4-7b28-4f61-846f-fac805df3ee8",
+        "status": "completed"
+      },
+      "createdAt": "2026-06-07T09:54:56.645Z"
+    },
+    {
+      "id": "11569b22-7142-4a08-8feb-6de7b337df2f",
+      "action": "flow-instance.create",
+      "summary": "创建流程实例：项目交付 → 项目 70ec817b-edd6-4db1-bb87-eda659051b93",
+      "metadata": {
+        "instanceId": "4d8f309b-4698-4863-b02f-fbfec0cb3cfc",
+        "projectId": "70ec817b-edd6-4db1-bb87-eda659051b93",
+        "templateId": "ac8e635f-4fb9-479a-a6c5-dda1b2559548"
+      },
+      "createdAt": "2026-06-07T09:54:56.643Z"
+    },
+    {
+      "id": "7dc47294-7139-4cc9-84f1-e8be04f8f541",
+      "action": "project.create",
+      "summary": "创建项目：独立流程测试项目",
+      "metadata": {
+        "projectId": "70ec817b-edd6-4db1-bb87-eda659051b93",
+        "templateId": null
+      },
+      "createdAt": "2026-06-07T09:54:56.642Z"
+    },
+    {
+      "id": "e5d5db13-0084-47a6-9d1d-855f9f980461",
+      "action": "flow-template.delete",
+      "summary": "删除流程模板",
+      "metadata": {
+        "templateId": "41694326-73dd-4cca-a147-717b5b9c7cc7"
+      },
+      "createdAt": "2026-06-07T09:54:56.641Z"
+    },
+    {
+      "id": "9cf3baea-747f-4fad-8a61-d7fd2a5ac0ce",
+      "action": "project.create",
+      "summary": "创建项目：绑定测试项目（绑定流程：LTC 轻量版）",
+      "metadata": {
+        "projectId": "1e2f694e-d934-49db-8955-a1d3ca40c45d",
+        "templateId": "725daed2-70f2-44d9-8aae-28fc212dc55c"
+      },
+      "createdAt": "2026-06-07T09:54:56.640Z"
+    },
+    {
+      "id": "2d5d03ee-d027-4743-b09f-54435d4383b7",
+      "action": "flow-template.clone",
+      "summary": "复制流程模板：测试模板-1780826096632 副本",
+      "metadata": {
+        "templateId": "41694326-73dd-4cca-a147-717b5b9c7cc7",
+        "sourceId": "3825e088-e85b-46c1-96cf-36488e8ea1e8"
+      },
+      "createdAt": "2026-06-07T09:54:56.639Z"
+    },
+    {
+      "id": "ca39b6d3-6109-41bc-84ea-0c3b1646914c",
+      "action": "flow-template.update",
+      "summary": "更新流程模板：测试模板-1780826096632",
+      "metadata": {
+        "templateId": "3825e088-e85b-46c1-96cf-36488e8ea1e8"
+      },
+      "createdAt": "2026-06-07T09:54:56.637Z"
+    },
+    {
+      "id": "487a39e6-b7e0-42a8-b810-81afe50681e0",
+      "action": "flow-template.create",
+      "summary": "创建流程模板：测试模板-1780826096632",
+      "metadata": {
+        "templateId": "3825e088-e85b-46c1-96cf-36488e8ea1e8"
+      },
+      "createdAt": "2026-06-07T09:54:56.633Z"
+    },
+    {
+      "id": "0564a412-b1d1-414c-9d81-bafc4b7f47cd",
+      "action": "flow-instance.delete",
+      "summary": "删除流程实例",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1"
+      },
+      "createdAt": "2026-06-07T09:53:12.808Z"
+    },
+    {
+      "id": "556b8613-c222-4e0d-b6fa-893747cc02fa",
+      "action": "project.advance",
+      "summary": "推进项目：回归测试项目",
+      "metadata": {
+        "projectId": "eac1182a-d6a1-4692-a804-8469afab4542"
+      },
+      "createdAt": "2026-06-07T09:53:12.807Z"
+    },
+    {
+      "id": "7e891c77-78c2-47df-a1ac-170d9b1d0e6a",
+      "action": "project.create",
+      "summary": "创建项目：回归测试项目",
+      "metadata": {
+        "projectId": "eac1182a-d6a1-4692-a804-8469afab4542",
+        "templateId": null
+      },
+      "createdAt": "2026-06-07T09:53:12.807Z"
+    },
+    {
+      "id": "3ad8cfc3-25c5-4ed8-bd24-d42534002072",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：failed",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "stageId": "4955b0a6-6f42-4d8c-9a1a-1af86fb30266",
+        "status": "failed"
+      },
+      "createdAt": "2026-06-07T09:53:12.805Z"
+    },
+    {
+      "id": "7f77c837-37fb-4913-980f-b0935ae79d43",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：progress",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "stageId": "4955b0a6-6f42-4d8c-9a1a-1af86fb30266",
+        "status": "progress"
+      },
+      "createdAt": "2026-06-07T09:53:12.805Z"
+    },
+    {
+      "id": "4bc1d253-1feb-4ffc-bf43-6d0363c31ad5",
+      "action": "flow-instance.advance",
+      "summary": "推进流程实例到下一阶段",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "currentStageId": "4955b0a6-6f42-4d8c-9a1a-1af86fb30266",
+        "status": "running"
+      },
+      "createdAt": "2026-06-07T09:53:12.804Z"
+    },
+    {
+      "id": "e57d015b-ec57-4f69-8617-9bb15067c2f3",
+      "action": "flow-instance.review",
+      "summary": "关口评审：approve",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "action": "approve"
+      },
+      "createdAt": "2026-06-07T09:53:12.803Z"
+    },
+    {
+      "id": "77e2ebb8-bab1-4a21-8522-a729ecf41979",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：completed",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "stageId": "3167c3fa-0066-4baf-9ce0-8c35c9683686",
+        "status": "completed"
+      },
+      "createdAt": "2026-06-07T09:53:12.803Z"
+    },
+    {
+      "id": "db2489c5-191d-4261-ae20-84888edffd8f",
+      "action": "flow-instance.return",
+      "summary": "退回流程阶段",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "reason": "需要返工"
+      },
+      "createdAt": "2026-06-07T09:53:12.802Z"
+    },
+    {
+      "id": "7e23af1f-4c40-442b-ad87-e4e078f9f052",
+      "action": "flow-instance.review",
+      "summary": "关口评审：reject",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "action": "reject"
+      },
+      "createdAt": "2026-06-07T09:53:12.802Z"
+    },
+    {
+      "id": "c035f853-72c7-404e-be3d-11493b0f7c72",
+      "action": "flow-instance.receipt",
+      "summary": "阶段回执：completed",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "stageId": "3167c3fa-0066-4baf-9ce0-8c35c9683686",
+        "status": "completed"
+      },
+      "createdAt": "2026-06-07T09:53:12.801Z"
+    },
+    {
+      "id": "c7f0f42d-bdb7-4656-b49a-24f1e7b4ff94",
+      "action": "flow-instance.create",
+      "summary": "创建流程实例：项目交付 → 项目 9e6836a5-4498-469d-8c90-f7b09026e6b9",
+      "metadata": {
+        "instanceId": "627f7edc-2cb3-4f7b-af0b-2a464bfa90a1",
+        "projectId": "9e6836a5-4498-469d-8c90-f7b09026e6b9",
+        "templateId": "ac8e635f-4fb9-479a-a6c5-dda1b2559548"
+      },
+      "createdAt": "2026-06-07T09:53:12.800Z"
+    },
+    {
+      "id": "806e5010-3f6d-426d-85f7-158703efbb10",
+      "action": "project.create",
+      "summary": "创建项目：独立流程测试项目",
+      "metadata": {
+        "projectId": "9e6836a5-4498-469d-8c90-f7b09026e6b9",
+        "templateId": null
+      },
+      "createdAt": "2026-06-07T09:53:12.799Z"
+    },
+    {
+      "id": "af01d3f7-6e42-4c16-8ca3-d9ae1a2c145a",
+      "action": "flow-template.delete",
+      "summary": "删除流程模板",
+      "metadata": {
+        "templateId": "e1180c37-33f4-4b81-9341-a3b74de0f159"
+      },
+      "createdAt": "2026-06-07T09:53:12.798Z"
+    },
+    {
+      "id": "ed3bbd4a-1865-4db3-a21d-0a66fcfffe0b",
+      "action": "project.create",
+      "summary": "创建项目：绑定测试项目（绑定流程：LTC 轻量版）",
+      "metadata": {
+        "projectId": "12a0a4fd-727b-46b7-a1d2-c87ec2397592",
+        "templateId": "725daed2-70f2-44d9-8aae-28fc212dc55c"
+      },
+      "createdAt": "2026-06-07T09:53:12.797Z"
+    },
+    {
+      "id": "d5fb5ed6-f0fd-4ad3-9917-8f41332db130",
+      "action": "flow-template.clone",
+      "summary": "复制流程模板：测试模板-1780825992789 副本",
+      "metadata": {
+        "templateId": "e1180c37-33f4-4b81-9341-a3b74de0f159",
+        "sourceId": "9d786162-b56c-4e81-9fbb-594efea4795e"
+      },
+      "createdAt": "2026-06-07T09:53:12.795Z"
+    },
+    {
+      "id": "67e66299-a58b-420a-aa6b-27ff3bd52781",
+      "action": "flow-template.update",
+      "summary": "更新流程模板：测试模板-1780825992789",
+      "metadata": {
+        "templateId": "9d786162-b56c-4e81-9fbb-594efea4795e"
+      },
+      "createdAt": "2026-06-07T09:53:12.793Z"
+    },
+    {
+      "id": "0ff06123-5134-4fe0-945f-22ed454596f3",
+      "action": "flow-template.create",
+      "summary": "创建流程模板：测试模板-1780825992789",
+      "metadata": {
+        "templateId": "9d786162-b56c-4e81-9fbb-594efea4795e"
+      },
+      "createdAt": "2026-06-07T09:53:12.790Z"
+    },
+    {
+      "id": "e482e04a-d85b-48bb-a0d7-66a2f8125426",
+      "action": "org.init-defaults",
+      "summary": "初始化默认模板：新增 21 个 Skill、8 个岗位、2 个流程模板",
+      "metadata": {
+        "skillsCreated": 21,
+        "rolesCreated": 8,
+        "flowTemplatesCreated": 2
+      },
+      "createdAt": "2026-06-07T09:53:12.780Z"
+    },
+    {
+      "id": "0f81ecd9-afdf-4369-8430-e5d568a06ae8",
+      "action": "system.seed",
+      "summary": "初始化本地工作区",
+      "createdAt": "2026-06-07T09:51:32.256Z"
+    }
+  ]
+}

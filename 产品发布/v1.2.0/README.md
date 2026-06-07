@@ -20,30 +20,16 @@ nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本�
 - 组织管理模块：Skill 池、岗位、员工、Adapter 视图和组织健康度。
 - 默认 7 大岗位族模板，可按需初始化 21 个 Skill 和 8 个岗位。
 - 数字员工工厂前三步：岗位匹配、入职培训、师父带教和草稿恢复。
-- 流程模板库：创建、编辑、删除、复制流程模板，按价值流、使能流、支撑流分类浏览，并支持搜索筛选。
-- 流程模板编辑器：维护阶段序列、阶段说明、准入条件、准出标准、角色责任和输入输出。
-- 内置流程模板："LTC 轻量版" 和 "项目交付"。
-- 项目绑定流程：创建项目时可选择流程模板，系统自动生成对应流程实例；未绑定模板的项目继续沿用原五阶段交付链路。
-- 流程实例运行与追踪：支持阶段推进、阶段回执、状态筛选和阶段时间线查看。
-- 关口评审：支持碳评审、硅评审、碳硅评审三种方式，评审结果支持通过、不通过和返工。
 
 ## 当前开发方式
 
-`1.2.0` 是流程管理版。开发调试仍可通过本地服务验收：
+`1.1.0` 是组织管理版。开发调试仍可通过本地服务验收：
 
 ```powershell
 npm run start:server
 ```
 
 打开 `http://127.0.0.1:4174`。
-
-流程管理入口：
-
-- `流程 > 流程库`：浏览、搜索、创建、编辑、复制和删除流程模板。
-- `流程库 > 编辑模板`：配置阶段序列、关口、角色责任和输入输出。
-- `新建项目 > 选择流程模板`：创建项目时绑定模板并实例化流程。
-- `项目详情 > 流程阶段`：提交阶段回执、触发关口评审和推进阶段。
-- `流程 > 实例追踪`：查看运行中的流程实例和阶段时间线。
 
 首次派发本地任务时：
 
@@ -123,16 +109,6 @@ npm run dist:win
 - `GET /api/adapters`
 - `GET /api/org/health`
 - `POST /api/org/init-defaults`
-- `GET|POST /api/flow-templates`
-- `GET|PATCH|DELETE /api/flow-templates/:id`
-- `POST /api/flow-templates/:id/clone`
-- `GET|POST /api/flow-instances`
-- `GET|PATCH|DELETE /api/flow-instances/:id`
-- `POST /api/flow-instances/:id/advance`
-- `POST /api/flow-instances/:id/review`
-- `POST /api/flow-instances/:id/return`
-- `GET|PATCH /api/flow-instances/:id/stages/:stageId`
-- `POST /api/flow-instances/:id/stages/:stageId/receipts`
 - `GET /api/executions?projectId=:projectId`
 - `POST /api/executions/preview`
 - `POST /api/executions/:id/confirm`

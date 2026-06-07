@@ -54,53 +54,8 @@ function validateData(data) {
   return data;
 }
 
-function validateBackupShapeForMigration(data) {
-  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Backup content is not a valid data object.");
-  const requiredArrays = {
-    projects: "Backup projects are invalid.",
-    agents: "Backup agents are invalid.",
-    skills: "Backup skills are invalid.",
-    roles: "Backup roles are invalid.",
-    employees: "Backup employees are invalid.",
-  };
-  for (const [field, message] of Object.entries(requiredArrays)) {
-    if (!Array.isArray(data[field])) throw new Error(message);
-  }
-  const optionalArrays = {
-    audit: "Backup audit entries are invalid.",
-    executions: "Backup executions are invalid.",
-    flowTemplates: "Backup flow templates are invalid.",
-    flowInstances: "Backup flow instances are invalid.",
-  };
-  for (const [field, message] of Object.entries(optionalArrays)) {
-    if (data[field] !== undefined && !Array.isArray(data[field])) throw new Error(message);
-  }
-  return data;
-}
-
-function readBackupData(filePath) {
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  validateBackupShapeForMigration(data);
-  return validateData(migrateData(data));
-}
-
-class StorageInterface {
-  load() { throw new Error("load() not implemented"); }
-  snapshot() { throw new Error("snapshot() not implemented"); }
-  save() { throw new Error("save() not implemented"); }
-  update(mutator) { throw new Error("update() not implemented"); }
-  audit(action, summary, metadata) { throw new Error("audit() not implemented"); }
-  reset() { throw new Error("reset() not implemented"); }
-  backup(options) { throw new Error("backup() not implemented"); }
-  listBackups() { throw new Error("listBackups() not implemented"); }
-  resolveBackup(fileName) { throw new Error("resolveBackup() not implemented"); }
-  inspectBackup(options) { throw new Error("inspectBackup() not implemented"); }
-  restoreBackup(options) { throw new Error("restoreBackup() not implemented"); }
-}
-
-class JsonStore extends StorageInterface {
+class JsonStore {
   constructor({ dataDir }) {
-    super();
     this.dataDir = dataDir;
     this.filePath = path.join(dataDir, "nomos-data.json");
     this.data = null;
@@ -212,7 +167,7 @@ class JsonStore extends StorageInterface {
 
   inspectBackup({ fileName } = {}) {
     const backup = this.resolveBackup(fileName);
-    const data = readBackupData(backup.filePath);
+    const data = migrateData(validateData(JSON.parse(fs.readFileSync(backup.filePath, "utf8"))));
     return {
       ...backup,
       dataVersion: data.version,
@@ -233,7 +188,7 @@ class JsonStore extends StorageInterface {
       throw new Error("Cannot restore a backup while local executions are active.");
     }
     const backup = this.resolveBackup(fileName);
-    const restoredData = readBackupData(backup.filePath);
+    const restoredData = migrateData(validateData(JSON.parse(fs.readFileSync(backup.filePath, "utf8"))));
     const protectionBackup = this.backup({ confirm: true, reason: "pre-restore" });
     this.data = restoredData;
     this.audit("system.backup.restore", `Restore local backup: ${backup.fileName}`, {
@@ -251,4 +206,4 @@ class JsonStore extends StorageInterface {
   }
 }
 
-module.exports = { StorageInterface, JsonStore, migrateData, validateData };
+module.exports = { JsonStore, migrateData, validateData };
