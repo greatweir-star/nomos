@@ -7,13 +7,14 @@ const { createDefaultData } = require("./default-data");
 const { mergeDefaultAgents, normalizeAdapterConfigs } = require("./agent-registry");
 const { ensureProjectWorkflow } = require("./workflow");
 const { normalizeFlowTemplate, ensureProjectFlowFields } = require("./flow");
+const { ensureWorkItemCollections } = require("./work-items");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function migrateData(data) {
-  data.version = Math.max(Number(data.version || 1), 8);
+  data.version = Math.max(Number(data.version || 1), 9);
   data.projects = Array.isArray(data.projects) ? data.projects : [];
   data.agents = Array.isArray(data.agents) ? data.agents : [];
   data.audit = Array.isArray(data.audit) ? data.audit : [];
@@ -22,6 +23,7 @@ function migrateData(data) {
   data.roles = Array.isArray(data.roles) ? data.roles : [];
   data.employees = Array.isArray(data.employees) ? data.employees : [];
   data.flowTemplates = Array.isArray(data.flowTemplates) ? data.flowTemplates.map(normalizeFlowTemplate) : [];
+  ensureWorkItemCollections(data);
   data.bridge = data.bridge || {
     id: "desktop-bridge",
     status: "offline",
@@ -39,6 +41,7 @@ function migrateData(data) {
     ensureProjectWorkflow(project);
     ensureProjectFlowFields(project);
   }
+  ensureWorkItemCollections(data);
   return data;
 }
 

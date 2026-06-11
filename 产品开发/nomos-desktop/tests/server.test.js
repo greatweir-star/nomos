@@ -161,7 +161,7 @@ test("legacy project data migrates into the workflow model", () => {
     );
     const store = new JsonStore({ dataDir });
     const data = store.load();
-    assert.equal(data.version, 8);
+    assert.equal(data.version, 9);
     assert.equal(data.projects[0].workflow.currentStageKey, "prd");
     assert.equal(data.projects[0].workflow.status, "active");
     assert.equal(data.projects[0].stages[0].attempt, 1);
@@ -169,6 +169,8 @@ test("legacy project data migrates into the workflow model", () => {
     assert.equal(data.projects[0].workflowTasks.length, 1);
     assert.equal(data.projects[0].workflowTasks[0].stageKey, "prd");
     assert.deepEqual(data.bridge.adapterCommands, {});
+    assert.ok(Array.isArray(data.workItems));
+    assert.ok(Array.isArray(data.workItemEvents));
     assert.ok(data.agents.some((agent) => agent.employee?.employmentType === "silicon"));
     assert.ok(data.agents.some((agent) => agent.architecture?.adapterId === "tencent-yuanqi"));
     assert.equal(data.agentAdapters["tencent-yuanqi"].status, "unconfigured");
@@ -1157,7 +1159,7 @@ test("local backups require confirmation and diagnostics expose sanitized status
 
     const diagnostics = await fetch(`${url}/api/system/diagnostics`).then((response) => response.json());
     assert.equal(diagnostics.status, "ok");
-    assert.equal(diagnostics.dataVersion, 8);
+    assert.equal(diagnostics.dataVersion, 9);
     assert.equal(diagnostics.backupCount, 1);
     assert.equal(diagnostics.projectCount, 3);
     assert.equal(diagnostics.adapters.some((adapter) => adapter.id === "alice"), true);
@@ -1670,7 +1672,7 @@ test("default org template generation and idempotency", async () => {
   });
 });
 
-test("data migration from v6 to v8 preserves existing data", async () => {
+test("data migration from v6 to v9 preserves existing data", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "nomos-migrate-"));
   try {
     // Write v6 format data
@@ -1691,15 +1693,19 @@ test("data migration from v6 to v8 preserves existing data", async () => {
     const store = new JsonStore({ dataDir });
     const data = store.load();
 
-    assert.equal(data.version, 8);
+    assert.equal(data.version, 9);
     assert.ok(Array.isArray(data.skills));
     assert.ok(Array.isArray(data.roles));
     assert.ok(Array.isArray(data.employees));
     assert.ok(Array.isArray(data.flowTemplates));
+    assert.ok(Array.isArray(data.workItems));
+    assert.ok(Array.isArray(data.workItemEvents));
     assert.equal(data.skills.length, 0);
     assert.equal(data.roles.length, 0);
     assert.equal(data.employees.length, 0);
     assert.equal(data.flowTemplates.length, 0);
+    assert.equal(data.workItems.length, 0);
+    assert.equal(data.workItemEvents.length, 0);
 
     // Existing data preserved
     assert.ok(Array.isArray(data.projects));
@@ -1720,6 +1726,14 @@ async function createFlow(url, body) {
     body: JSON.stringify(body),
   });
   return response;
+}
+
+async function createWorkItemRequest(url, body) {
+  return fetch(`${url}/api/work-items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 const sampleFlowBody = {
@@ -1956,5 +1970,133 @@ test("binding a non-existent flow template is rejected", async () => {
       body: JSON.stringify({ title: "X", goal: "Y", flowTemplateId: "does-not-exist" }),
     });
     assert.equal(created.status, 400);
+  });
+});
+
+// ─── v1.3 Work Items And Dashboards ─────────────────────────────────
+
+test("work items support flow-stage mapping, events and dependency guardrails", async () => {
+  await withServer(async (url) => {
+    const template = (await (await createFlow(url, sampleFlowBody)).json()).data;
+    const project = await (await fetch(`${url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "V1.3 工作项项目", goal: "验证工作项", flowTemplateId: template.id }),
+    })).json();
+    const flowStage = project.flowStages[0];
+
+    const predecessor = await createWorkItemRequest(url, {
+      projectId: project.id,
+      title: "竞品分析",
+      description: "- [x] 收集竞品\n- [ ] 输出结论",
+      estimateHours: 2,
+      assignee: { type: "agent", id: "codex-cli", name: "Codex CLI" },
+    });
+    assert.equal(predecessor.status, 201);
+    const predecessorItem = (await predecessor.json()).data;
+    assert.equal(predecessorItem.checklist.total, 2);
+    assert.equal(predecessorItem.checklist.completed, 1);
+
+    const dependent = await createWorkItemRequest(url, {
+      projectId: project.id,
+      sourceType: "flow_stage",
+      flowInstanceId: project.id,
+      flowStageId: flowStage.id,
+      title: "报价草案",
+      estimateHours: 3,
+      dependsOn: [predecessorItem.id],
+      assignee: { type: "agent", id: "codex-cli", name: "Codex CLI" },
+    });
+    assert.equal(dependent.status, 201);
+    const dependentItem = (await dependent.json()).data;
+    assert.equal(dependentItem.sourceType, "flow_stage");
+    assert.equal(dependentItem.flowTemplateId, template.id);
+    assert.equal(dependentItem.flowStageId, flowStage.id);
+    assert.equal(dependentItem.templateStageId, flowStage.stageTemplateId);
+    assert.equal(dependentItem.status, "waiting_dependency");
+
+    const blockedStart = await fetch(`${url}/api/work-items/${dependentItem.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "in_progress" }),
+    });
+    assert.equal(blockedStart.status, 409);
+    const blockedBody = await blockedStart.json();
+    assert.equal(blockedBody.details.unmetDependencies[0].id, predecessorItem.id);
+
+    const cycle = await fetch(`${url}/api/work-items/${predecessorItem.id}/dependencies`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dependencyId: dependentItem.id }),
+    });
+    assert.equal(cycle.status, 409);
+
+    const done = await fetch(`${url}/api/work-items/${predecessorItem.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+    assert.equal(done.status, 200);
+
+    const started = await fetch(`${url}/api/work-items/${dependentItem.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "in_progress", progress: 40 }),
+    });
+    assert.equal(started.status, 200);
+    const startedItem = (await started.json()).data;
+    assert.equal(startedItem.status, "in_progress");
+    assert.equal(startedItem.progress, 40);
+
+    const events = await fetch(`${url}/api/work-items/${dependentItem.id}/events`).then((response) => response.json());
+    assert.ok(events.data.some((event) => event.type === "item.created"));
+    assert.ok(events.data.some((event) => event.type === "flow_stage.linked"));
+    assert.ok(events.data.some((event) => event.type === "dependency.added"));
+    assert.ok(events.data.some((event) => event.type === "status.changed"));
+
+    const progress = await fetch(`${url}/api/dashboards/progress?projectId=${project.id}`).then((response) => response.json());
+    assert.equal(progress.data.total, 3);
+    assert.equal(progress.data.done, 1);
+    assert.equal(progress.data.activeEstimateHours, 5);
+    assert.equal(progress.data.doneEstimateHours, 2);
+    assert.ok(progress.data.stageGroups.some((group) => group.key === flowStage.id));
+
+    const resources = await fetch(`${url}/api/dashboards/resources?projectId=${project.id}`).then((response) => response.json());
+    const codex = resources.data.resources.find((group) => group.assignee.id === "codex-cli");
+    assert.ok(codex);
+    assert.equal(codex.inProgress, 1);
+    assert.equal(codex.recentlyDone, 1);
+  });
+});
+
+test("legacy workflow tasks are mirrored into work items idempotently", async () => {
+  await withServer(async (url) => {
+    const first = await fetch(`${url}/api/work-items/sync-legacy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: "project-website" }),
+    });
+    assert.equal(first.status, 200);
+    const firstBody = await first.json();
+    assert.ok(firstBody.data.created >= 1);
+
+    const list = await fetch(`${url}/api/work-items?projectId=project-website&sourceType=legacy_workflow_task`).then((response) => response.json());
+    assert.ok(list.data.length >= 1);
+    assert.ok(list.data.every((item) => item.sourceType === "legacy_workflow_task"));
+    assert.ok(list.data.every((item) => item.legacyWorkflowTaskId));
+    assert.ok(list.data.every((item) => item.projectId === "project-website"));
+
+    const second = await fetch(`${url}/api/work-items/sync-legacy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: "project-website" }),
+    });
+    assert.equal(second.status, 200);
+    const secondBody = await second.json();
+    assert.equal(secondBody.data.created, 0);
+
+    const summary = await fetch(`${url}/api/projects/project-website/board-summary`).then((response) => response.json());
+    assert.ok(summary.data.total >= list.data.length);
+    assert.equal(summary.data.projectGroups[0].key, "project-website");
   });
 });

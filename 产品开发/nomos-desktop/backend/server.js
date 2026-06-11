@@ -29,6 +29,21 @@ const {
   flowProgress,
   presetFlowTemplates,
 } = require("./flow");
+const {
+  WorkItemError,
+  createWorkItem,
+  updateWorkItem,
+  cancelWorkItem,
+  addDependency,
+  removeDependency,
+  addComment,
+  filterWorkItems,
+  decorateWorkItem,
+  buildProgressDashboard,
+  buildResourceDashboard,
+  syncLegacyWorkItems,
+  needsLegacySync,
+} = require("./work-items");
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const FETCH_BLOCKED_PORTS = new Set([
@@ -48,6 +63,16 @@ function sendJson(response, statusCode, payload) {
 
 function sendError(response, statusCode, message) {
   sendJson(response, statusCode, { error: message });
+}
+
+function sendDomainError(response, error) {
+  if (error instanceof WorkItemError || error.statusCode) {
+    const payload = { error: error.message };
+    if (error.details) payload.details = error.details;
+    sendJson(response, error.statusCode || 400, payload);
+    return;
+  }
+  sendError(response, 400, error.message);
 }
 
 function readJson(request) {
@@ -96,6 +121,15 @@ function findEmployee(data, employeeId) {
 
 function findFlowTemplate(data, flowId) {
   return (data.flowTemplates || []).find((template) => template.id === flowId);
+}
+
+function snapshotWithLegacyWorkItems(store, projectId = null) {
+  const data = store.snapshot();
+  if (!needsLegacySync(data, projectId)) return data;
+  return store.update((draft) => {
+    syncLegacyWorkItems(draft, { projectId });
+    return draft;
+  });
 }
 
 function projectsReferencingFlow(data, flowId) {
@@ -275,6 +309,178 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
         return;
       }
 
+      if (url.pathname === "/api/dashboards/progress" && request.method === "GET") {
+        const projectId = url.searchParams.get("projectId");
+        const data = snapshotWithLegacyWorkItems(store, projectId);
+        sendJson(response, 200, { data: buildProgressDashboard(data, url.searchParams) });
+        return;
+      }
+
+      if (url.pathname === "/api/dashboards/resources" && request.method === "GET") {
+        const projectId = url.searchParams.get("projectId");
+        const data = snapshotWithLegacyWorkItems(store, projectId);
+        sendJson(response, 200, { data: buildResourceDashboard(data, url.searchParams) });
+        return;
+      }
+
+      if (url.pathname === "/api/work-items" && request.method === "GET") {
+        const projectId = url.searchParams.get("projectId");
+        const data = snapshotWithLegacyWorkItems(store, projectId);
+        sendJson(response, 200, { data: filterWorkItems(data, url.searchParams).map((item) => decorateWorkItem(data, item)) });
+        return;
+      }
+
+      if (url.pathname === "/api/work-items" && request.method === "POST") {
+        const body = await readJson(request);
+        try {
+          const item = store.update((data) => {
+            const created = createWorkItem(data, body, { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.create", `创建工作项：${created.title}`, {
+              workItemId: created.id,
+              projectId: created.projectId,
+              sourceType: created.sourceType,
+            });
+            return created;
+          });
+          sendJson(response, 201, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/work-items/sync-legacy" && request.method === "POST") {
+        const body = await readJson(request);
+        const projectId = body.projectId || url.searchParams.get("projectId") || null;
+        const snapshot = store.snapshot();
+        if (projectId && !findProject(snapshot, projectId)) {
+          sendError(response, 404, "项目不存在");
+          return;
+        }
+        const result = store.update((data) => {
+          const synced = syncLegacyWorkItems(data, { projectId });
+          store.audit("workitem.sync-legacy", projectId ? `同步旧任务工作项：${projectId}` : "同步全部旧任务工作项", {
+            projectId,
+            ...synced,
+          });
+          return synced;
+        });
+        sendJson(response, 200, { data: result });
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && request.method === "GET" && segments.length === 3) {
+        const data = snapshotWithLegacyWorkItems(store);
+        const item = filterWorkItems(data, {}).find((record) => record.id === segments[2]);
+        if (!item) {
+          sendError(response, 404, "工作项不存在");
+          return;
+        }
+        sendJson(response, 200, { data: decorateWorkItem(data, item) });
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && request.method === "PATCH" && segments.length === 3) {
+        const body = await readJson(request);
+        try {
+          const item = store.update((data) => {
+            const updated = updateWorkItem(data, segments[2], body, { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.update", `更新工作项：${updated.title}`, {
+              workItemId: updated.id,
+              projectId: updated.projectId,
+              status: updated.status,
+            });
+            return updated;
+          });
+          sendJson(response, 200, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "cancel" && request.method === "POST") {
+        try {
+          const item = store.update((data) => {
+            const cancelled = cancelWorkItem(data, segments[2], { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.cancel", `取消工作项：${cancelled.title}`, {
+              workItemId: cancelled.id,
+              projectId: cancelled.projectId,
+            });
+            return cancelled;
+          });
+          sendJson(response, 200, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "dependencies" && request.method === "POST") {
+        const body = await readJson(request);
+        try {
+          const item = store.update((data) => {
+            const updated = addDependency(data, segments[2], body.dependencyId, { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.dependency.add", `新增工作项依赖：${updated.title}`, {
+              workItemId: updated.id,
+              dependencyId: body.dependencyId,
+            });
+            return updated;
+          });
+          sendJson(response, 200, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "dependencies" && segments[4] && request.method === "DELETE") {
+        try {
+          const item = store.update((data) => {
+            const updated = removeDependency(data, segments[2], segments[4], { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.dependency.remove", `移除工作项依赖：${updated.title}`, {
+              workItemId: updated.id,
+              dependencyId: segments[4],
+            });
+            return updated;
+          });
+          sendJson(response, 200, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "events" && request.method === "GET") {
+        const data = snapshotWithLegacyWorkItems(store);
+        if (!filterWorkItems(data, {}).some((item) => item.id === segments[2])) {
+          sendError(response, 404, "工作项不存在");
+          return;
+        }
+        sendJson(response, 200, {
+          data: (data.workItemEvents || []).filter((event) => event.workItemId === segments[2]),
+        });
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "comments" && request.method === "POST") {
+        const body = await readJson(request);
+        try {
+          const item = store.update((data) => {
+            const updated = addComment(data, segments[2], body.comment || body.text, { actor: { type: "user", name: "Local User" } });
+            store.audit("workitem.comment.add", `新增工作项备注：${updated.title}`, {
+              workItemId: updated.id,
+              projectId: updated.projectId,
+            });
+            return updated;
+          });
+          sendJson(response, 201, { data: item });
+        } catch (error) {
+          sendDomainError(response, error);
+        }
+        return;
+      }
+
       if (url.pathname === "/api/projects" && request.method === "GET") {
         sendJson(response, 200, store.snapshot().projects.map(summarizeProject));
         return;
@@ -325,6 +531,47 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
             return;
           }
           sendJson(response, 200, project);
+          return;
+        }
+
+        if (segments[3] === "work-items" && segments.length === 4 && request.method === "GET") {
+          if (!findProject(store.snapshot(), projectId)) {
+            sendError(response, 404, "项目不存在");
+            return;
+          }
+          const data = snapshotWithLegacyWorkItems(store, projectId);
+          sendJson(response, 200, {
+            data: filterWorkItems(data, { ...Object.fromEntries(url.searchParams), projectId }).map((item) => decorateWorkItem(data, item)),
+          });
+          return;
+        }
+
+        if (segments[3] === "work-items" && segments.length === 4 && request.method === "POST") {
+          const body = await readJson(request);
+          try {
+            const item = store.update((data) => {
+              const created = createWorkItem(data, { ...body, projectId }, { actor: { type: "user", name: "Local User" } });
+              store.audit("workitem.create", `创建项目工作项：${created.title}`, {
+                workItemId: created.id,
+                projectId: created.projectId,
+                sourceType: created.sourceType,
+              });
+              return created;
+            });
+            sendJson(response, 201, { data: item });
+          } catch (error) {
+            sendDomainError(response, error);
+          }
+          return;
+        }
+
+        if (segments[3] === "board-summary" && segments.length === 4 && request.method === "GET") {
+          if (!findProject(store.snapshot(), projectId)) {
+            sendError(response, 404, "项目不存在");
+            return;
+          }
+          const data = snapshotWithLegacyWorkItems(store, projectId);
+          sendJson(response, 200, { data: buildProgressDashboard(data, { projectId }) });
           return;
         }
 

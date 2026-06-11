@@ -121,11 +121,13 @@ function createDefaultData() {
   const now = new Date().toISOString();
 
   return {
-    version: 8,
+    version: 9,
     createdAt: now,
     updatedAt: now,
     projects: [],
     flowTemplates: [],
+    workItems: [],
+    workItemEvents: [],
     agents: createDefaultAgents(),
     agentAdapters: normalizeAdapterConfigs(),
     bridge: {

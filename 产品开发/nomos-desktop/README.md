@@ -23,10 +23,14 @@ nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本�
 - 流程管理模块（v1.2）：流程模板库（价值流/使能流/支撑流三级分类）、流程模板 CRUD、
   LTC/IPD/ITR 三个开箱即用的预设轻量版模板、项目绑定/更换/解绑流程、关口评审状态机
   （碳/硅/碳硅评审，通过进入下一阶段、不通过停留、需返工回退指定阶段）。
+- 工作项与看板模块（v1.3）：新增工作台入口，支持工作项 CRUD、状态流转、负责人、工时、
+  截止时间、流程阶段绑定、旧 `workflowTasks` 镜像、依赖校验和事件账本。
+- 进度看板与资源看板：按项目、阶段、状态、负责人聚合完成率、阻塞、逾期、本周到期、
+  预计剩余工时和最近工作项事件。
 
 ## 当前开发方式
 
-`1.2.0` 是流程管理版。开发调试仍可通过本地服务验收：
+`1.3.0` 是工作项与进度资源看板版。开发调试仍可通过本地服务验收：
 
 ```powershell
 npm run start:server
@@ -118,6 +122,18 @@ npm run dist:win
 - `POST|DELETE /api/projects/:id/flow`
 - `GET /api/projects/:id/flow/progress`
 - `POST /api/projects/:id/flow/stages/:flowStageId/review`
+- `GET|POST /api/work-items`
+- `GET|PATCH /api/work-items/:id`
+- `POST /api/work-items/:id/cancel`
+- `POST /api/work-items/:id/dependencies`
+- `DELETE /api/work-items/:id/dependencies/:dependencyId`
+- `GET /api/work-items/:id/events`
+- `POST /api/work-items/:id/comments`
+- `POST /api/work-items/sync-legacy`
+- `GET|POST /api/projects/:id/work-items`
+- `GET /api/projects/:id/board-summary`
+- `GET /api/dashboards/progress`
+- `GET /api/dashboards/resources`
 - `GET /api/executions?projectId=:projectId`
 - `POST /api/executions/preview`
 - `POST /api/executions/:id/confirm`

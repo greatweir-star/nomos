@@ -295,6 +295,32 @@ const api = {
       body: JSON.stringify(payload),
     });
   },
+
+  // Work item and dashboard API
+  workItems(params = "") {
+    return this.request(`/api/work-items${params ? "?" + params : ""}`);
+  },
+  createWorkItem(payload) {
+    return this.request("/api/work-items", { method: "POST", body: JSON.stringify(payload) });
+  },
+  updateWorkItem(id, payload) {
+    return this.request(`/api/work-items/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  cancelWorkItem(id) {
+    return this.request(`/api/work-items/${id}/cancel`, { method: "POST" });
+  },
+  syncLegacyWorkItems(projectId = "") {
+    return this.request("/api/work-items/sync-legacy", {
+      method: "POST",
+      body: JSON.stringify(projectId ? { projectId } : {}),
+    });
+  },
+  progressDashboard(params = "") {
+    return this.request(`/api/dashboards/progress${params ? "?" + params : ""}`);
+  },
+  resourceDashboard(params = "") {
+    return this.request(`/api/dashboards/resources${params ? "?" + params : ""}`);
+  },
 };
 
 const state = {
@@ -318,6 +344,8 @@ const state = {
   flowData: null,
   flowSubPage: "library",
   selectedFlowId: null,
+  workbenchData: null,
+  workbenchSubPage: "items",
 };
 
 const projectList = document.querySelector(".workspace .project-list");
@@ -2831,6 +2859,338 @@ function renderSettingsPage() {
   `;
 }
 
+const WORKBENCH_SUBPAGES = [
+  { key: "items", label: "工作项" },
+  { key: "progress", label: "进度看板" },
+  { key: "resources", label: "资源看板" },
+];
+const WORK_ITEM_STATUS_LABELS = {
+  todo: "待开始",
+  ready: "就绪",
+  in_progress: "进行中",
+  waiting_dependency: "等依赖",
+  review_pending: "待验收",
+  blocked: "阻塞",
+  done: "完成",
+  cancelled: "取消",
+};
+const WORK_ITEM_STATUS_CLASS = {
+  todo: "neutral",
+  ready: "info",
+  in_progress: "primary",
+  waiting_dependency: "warn",
+  review_pending: "info",
+  blocked: "danger",
+  done: "success",
+  cancelled: "neutral",
+};
+
+async function loadWorkbenchData(params = "") {
+  try {
+    const [itemsRes, progressRes, resourcesRes] = await Promise.all([
+      api.workItems(params),
+      api.progressDashboard(params),
+      api.resourceDashboard(params),
+    ]);
+    state.workbenchData = {
+      items: itemsRes.data || [],
+      progress: progressRes.data || {},
+      resources: resourcesRes.data || {},
+    };
+  } catch (error) {
+    console.error("加载工作台失败:", error);
+    state.workbenchData = { items: [], progress: {}, resources: {}, error: error.message };
+  }
+}
+
+function percent(value) {
+  if (value === null || value === undefined) return "未知";
+  return `${Math.round(Number(value || 0) * 100)}%`;
+}
+
+function formatHours(value) {
+  const number = Number(value || 0);
+  return `${Math.round(number * 10) / 10}h`;
+}
+
+function formatDue(value) {
+  if (!value) return "未设截止";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return value;
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function workItemAssignee(item) {
+  if (!item.assignee || item.assignee.type === "unassigned") return "未分配";
+  return item.assignee.name || item.assignee.id || "未分配";
+}
+
+function workItemStage(item) {
+  return item.flowStageName || item.legacyStageKey || "项目临时";
+}
+
+function renderWorkbenchPage() {
+  if (!state.workbenchData) {
+    emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Workbench</div><h2>工作台</h2><p>正在加载工作项...</p></div></div>`;
+    run(async () => { await loadWorkbenchData(); renderWorkbenchPage(); });
+    return;
+  }
+  const progress = state.workbenchData.progress || {};
+  emptyPanel.innerHTML = `
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Workbench</div>
+        <h2>工作台</h2>
+        <p>${progress.total || 0} 个工作项 · 完成率 ${percent(progress.completionRate)}</p>
+      </div>
+      <div class="page-actions">
+        <button class="button" type="button" data-workitem-sync>同步旧任务</button>
+        <button class="button primary" type="button" data-workitem-create>新建工作项</button>
+      </div>
+    </div>
+    <nav class="org-nav">
+      ${WORKBENCH_SUBPAGES.map((sp) => `<button class="org-nav-item${state.workbenchSubPage === sp.key ? " active" : ""}" data-workbench-sub="${sp.key}">${sp.label}</button>`).join("")}
+    </nav>
+    <div id="workbenchSubContent"></div>
+  `;
+  emptyPanel.querySelector(".org-nav").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-workbench-sub]");
+    if (!btn) return;
+    state.workbenchSubPage = btn.dataset.workbenchSub;
+    renderWorkbenchPage();
+  });
+  emptyPanel.querySelector("[data-workitem-create]").addEventListener("click", openWorkItemCreateModal);
+  emptyPanel.querySelector("[data-workitem-sync]").addEventListener("click", () =>
+    run(async () => {
+      await api.syncLegacyWorkItems();
+      await loadWorkbenchData();
+      renderWorkbenchPage();
+      showToast("旧任务已同步到工作项");
+    }),
+  );
+  const container = document.getElementById("workbenchSubContent");
+  if (state.workbenchSubPage === "progress") renderProgressDashboard(container);
+  else if (state.workbenchSubPage === "resources") renderResourceDashboard(container);
+  else renderWorkItemList(container);
+}
+
+function renderMetricGrid(metrics) {
+  return `
+    <div class="workbench-metrics">
+      ${metrics.map((metric) => `
+        <article class="workbench-metric">
+          <span>${escapeHtml(metric.label)}</span>
+          <strong>${escapeHtml(String(metric.value))}</strong>
+        </article>
+      `).join("")}
+    </div>`;
+}
+
+function renderWorkItemList(container) {
+  const items = state.workbenchData.items || [];
+  const progress = state.workbenchData.progress || {};
+  container.innerHTML = `
+    ${renderMetricGrid([
+      { label: "总数", value: progress.total || 0 },
+      { label: "完成", value: progress.done || 0 },
+      { label: "阻塞", value: progress.blocked || 0 },
+      { label: "逾期", value: progress.overdue || 0 },
+      { label: "本周到期", value: progress.dueThisWeek || 0 },
+    ])}
+    <section class="page-section">
+      <div class="manage-list workitem-list">
+        ${items.length === 0 ? `<p class="empty-copy">暂无工作项。</p>` : items.map(renderWorkItemRow).join("")}
+      </div>
+    </section>
+  `;
+  bindWorkItemActions(container);
+}
+
+function renderWorkItemRow(item) {
+  const statusClass = WORK_ITEM_STATUS_CLASS[item.status] || "neutral";
+  const unmet = item.unmetDependencies || [];
+  return `
+    <article class="manage-row workitem-row">
+      <div class="manage-copy">
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.projectTitle || item.projectId)} · ${escapeHtml(workItemStage(item))} · ${escapeHtml(workItemAssignee(item))} · ${formatDue(item.dueAt)}</p>
+        ${unmet.length ? `<small>未完成依赖：${unmet.map((dep) => escapeHtml(dep.title)).join("、")}</small>` : ""}
+      </div>
+      <span class="workitem-status ${statusClass}">${WORK_ITEM_STATUS_LABELS[item.status] || item.status}</span>
+      <div class="workitem-actions">
+        ${item.status !== "in_progress" && item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny" type="button" data-workitem-status="${escapeHtml(item.id)}|in_progress">开始</button>` : ""}
+        ${item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny primary" type="button" data-workitem-status="${escapeHtml(item.id)}|done">完成</button>` : ""}
+        ${item.status !== "blocked" && item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny" type="button" data-workitem-status="${escapeHtml(item.id)}|blocked">阻塞</button>` : ""}
+        ${item.status !== "cancelled" ? `<button class="button tiny ghost" type="button" data-workitem-cancel="${escapeHtml(item.id)}">取消</button>` : ""}
+      </div>
+    </article>`;
+}
+
+function bindWorkItemActions(container) {
+  container.querySelectorAll("[data-workitem-status]").forEach((button) =>
+    button.addEventListener("click", () =>
+      run(async () => {
+        const [id, status] = button.dataset.workitemStatus.split("|");
+        const payload = { status };
+        if (status === "blocked") {
+          const reason = await askText("标记阻塞", "阻塞原因", "", { type: "textarea", confirmLabel: "保存" });
+          if (reason === null) return;
+          payload.blockedReason = reason.trim();
+        }
+        await api.updateWorkItem(id, payload);
+        await loadWorkbenchData();
+        renderWorkbenchPage();
+        showToast("工作项已更新");
+      }),
+    ),
+  );
+  container.querySelectorAll("[data-workitem-cancel]").forEach((button) =>
+    button.addEventListener("click", () =>
+      run(async () => {
+        if (!(await askConfirm("确认取消这个工作项吗？", { title: "取消工作项", danger: true, confirmLabel: "取消工作项" }))) return;
+        await api.cancelWorkItem(button.dataset.workitemCancel);
+        await loadWorkbenchData();
+        renderWorkbenchPage();
+        showToast("工作项已取消");
+      }),
+    ),
+  );
+}
+
+function renderProgressDashboard(container) {
+  const data = state.workbenchData.progress || {};
+  container.innerHTML = `
+    ${renderMetricGrid([
+      { label: "完成率", value: percent(data.completionRate) },
+      { label: "工时完成率", value: percent(data.hourCompletionRate) },
+      { label: "有效工时", value: formatHours(data.activeEstimateHours) },
+      { label: "阻塞链路", value: (data.blockingLinks || []).length },
+    ])}
+    <section class="page-section workbench-grid">
+      <div class="workbench-panel">
+        <div class="section-head"><h3>阶段进度</h3></div>
+        ${(data.stageGroups || []).length === 0 ? `<p class="empty-copy">暂无阶段数据。</p>` : (data.stageGroups || []).map((group) => `
+          <div class="workbench-bar-row">
+            <span>${escapeHtml(group.label)}</span>
+            <div class="progress"><div class="progress-bar" style="width:${Math.round((group.completionRate || 0) * 100)}%"></div></div>
+            <b>${percent(group.completionRate)}</b>
+          </div>
+        `).join("")}
+      </div>
+      <div class="workbench-panel">
+        <div class="section-head"><h3>阻塞链路</h3></div>
+        ${(data.blockingLinks || []).length === 0 ? `<p class="empty-copy">暂无阻塞项。</p>` : (data.blockingLinks || []).map((item) => `
+          <div class="workbench-blocker">
+            <strong>${escapeHtml(item.title)}</strong>
+            <p>${escapeHtml(item.blockedReason || item.unmetDependencies?.map((dep) => dep.title).join("、") || "等待处理")}</p>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+    <section class="page-section">
+      <div class="section-head"><h3>最近事件</h3></div>
+      <div class="manage-list">
+        ${(data.recentEvents || []).length === 0 ? `<p class="empty-copy">暂无事件。</p>` : (data.recentEvents || []).map((event) => `
+          <div class="audit-row">
+            <span>${escapeHtml(event.workItemTitle)} · ${escapeHtml(event.type)}</span>
+            <time>${escapeHtml(formatDue(event.createdAt))}</time>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderResourceDashboard(container) {
+  const data = state.workbenchData.resources || {};
+  container.innerHTML = `
+    ${renderMetricGrid([
+      { label: "执行者", value: data.totalResources || 0 },
+      { label: "工作项", value: data.totalItems || 0 },
+      { label: "关注对象", value: data.overloaded || 0 },
+      { label: "未分配", value: data.unassigned?.total || 0 },
+    ])}
+    <section class="page-section">
+      <div class="manage-list">
+        ${(data.resources || []).length === 0 ? `<p class="empty-copy">暂无资源负载。</p>` : (data.resources || []).map((group) => `
+          <article class="manage-row resource-row">
+            <div class="manage-copy">
+              <strong>${escapeHtml(group.assignee.name)}</strong>
+              <p>${escapeHtml(group.assignee.type)} · 进行中 ${group.inProgress} · 就绪 ${group.ready} · 阻塞 ${group.blocked} · 逾期 ${group.overdue}</p>
+            </div>
+            <span class="workitem-status ${group.blocked || group.overdue ? "danger" : group.inProgress ? "primary" : "success"}">${formatHours(group.remainingHours)}</span>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function openWorkItemCreateModal() {
+  run(async () => {
+    const projects = state.workspace?.projects || [];
+    const agents = state.workspace?.agents || [];
+    const employees = state.workspace?.employees || [];
+    const roles = state.workspace?.roles || [];
+    const stageOptions = [
+      { value: "", label: "不绑定流程阶段" },
+      ...((state.project?.flowStages || []).map((stage) => ({
+        value: `${state.project.id}|${stage.id}`,
+        label: `${state.project.title} / ${stage.name}`,
+      }))),
+    ];
+    const assigneeOptions = [
+      { value: "unassigned|", label: "未分配" },
+      ...employees.map((employee) => ({ value: `employee|${employee.id}|${employee.name}`, label: `员工 / ${employee.name}` })),
+      ...agents.map((agent) => ({ value: `agent|${agent.id}|${agent.name}`, label: `Agent / ${agent.name}` })),
+      ...roles.map((role) => ({ value: `role|${role.id}|${role.name}`, label: `岗位 / ${role.name}` })),
+    ];
+    const values = await openActionModal({
+      title: "新建工作项",
+      fields: [
+        { name: "title", label: "标题", placeholder: "例如：竞品分析" },
+        { name: "projectId", label: "项目", type: "select", value: state.project?.id || projects[0]?.id || "", options: projects.map((project) => ({ value: project.id, label: project.title })) },
+        { name: "flowStageRef", label: "流程阶段", type: "select", required: false, options: stageOptions },
+        { name: "assigneeRef", label: "负责人", type: "select", required: false, options: assigneeOptions },
+        { name: "status", label: "状态", type: "select", value: "todo", options: [
+          { value: "todo", label: "待开始" },
+          { value: "ready", label: "就绪" },
+          { value: "in_progress", label: "进行中" },
+        ] },
+        { name: "estimateHours", label: "预计工时", type: "number", required: false, placeholder: "例如：2" },
+        { name: "dueAt", label: "截止日期", type: "date", required: false },
+        { name: "description", label: "描述", type: "textarea", required: false },
+      ],
+      confirmLabel: "创建",
+    });
+    if (!values) return;
+    const payload = {
+      projectId: values.projectId,
+      sourceType: "manual",
+      title: values.title,
+      status: values.status || "todo",
+      description: values.description || "",
+      estimateHours: values.estimateHours ? Number(values.estimateHours) : null,
+      dueAt: values.dueAt || null,
+    };
+    if (values.flowStageRef) {
+      const [projectId, flowStageId] = values.flowStageRef.split("|");
+      payload.projectId = projectId;
+      payload.sourceType = "flow_stage";
+      payload.flowInstanceId = projectId;
+      payload.flowStageId = flowStageId;
+    }
+    if (values.assigneeRef) {
+      const [type, id, name] = values.assigneeRef.split("|");
+      payload.assignee = { type, id: id || null, name: name || null };
+    }
+    await api.createWorkItem(payload);
+    await loadWorkbenchData();
+    renderWorkbenchPage();
+    showToast("工作项已创建");
+  });
+}
+
 const FLOW_CATEGORY_LABELS = { value: "价值流", enabling: "使能流", supporting: "支撑流" };
 const FLOW_REVIEW_LABELS = { carbon: "碳评审", silicon: "硅评审", hybrid: "碳硅评审" };
 const GATE_STATUS_META = {
@@ -3135,6 +3495,10 @@ function renderActiveTab() {
   }
   if (state.activeTab === "workflow") {
     renderWorkflowHomePage();
+    return;
+  }
+  if (state.activeTab === "workbench") {
+    renderWorkbenchPage();
     return;
   }
   if (state.activeTab === "organization") {
