@@ -25,6 +25,15 @@
         --blue-soft: #e7edf2;
         --shadow: 0 20px 64px rgba(28, 50, 43, 0.12);
         --shadow-soft: 0 7px 22px rgba(31, 56, 48, 0.07);
+        /* Aliases consumed by the organization & flow pages. Previously
+           undefined, which silently degraded those pages to browser defaults. */
+        --primary: var(--green);
+        --primary-soft: var(--green-soft);
+        --surface: var(--paper-soft);
+        --card: var(--paper);
+        --border: var(--line);
+        --border-strong: var(--line-strong);
+        --text: var(--ink);
       }
 
       * {
@@ -4479,6 +4488,139 @@
         height: 14px;
         accent-color: var(--primary);
       }
+
+      /* ─── Flow management page ─────────────────────────────────── */
+      .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      .flow-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card);
+        box-shadow: var(--shadow-soft);
+        cursor: pointer;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      }
+      .flow-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--border-strong);
+        box-shadow: var(--shadow);
+      }
+      .flow-card-head { display: flex; gap: 6px; align-items: center; }
+      .flow-card-title { font-size: 15px; color: var(--text); }
+      .flow-card-desc {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+        min-height: 36px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .flow-card-meta {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 11px;
+        border-top: 1px dashed var(--border);
+        padding-top: 8px;
+      }
+      .flow-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        background: var(--surface);
+        color: var(--muted);
+      }
+      .flow-badge.cat-value { background: var(--green-soft); color: var(--green); }
+      .flow-badge.cat-enabling { background: var(--blue-soft); color: var(--blue); }
+      .flow-badge.cat-supporting { background: var(--amber-soft); color: var(--amber); }
+      .flow-badge.preset { background: #ece8f6; color: #6a5aa6; }
+
+      .flow-detail-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .flow-detail-actions { display: flex; gap: 8px; }
+      .flow-stage-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+      .flow-stage-item {
+        display: flex;
+        gap: 14px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--card);
+      }
+      .flow-stage-index {
+        flex: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: var(--green-soft);
+        color: var(--green);
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .flow-stage-body { display: flex; flex-direction: column; gap: 6px; }
+      .flow-stage-body strong { font-size: 14px; color: var(--text); }
+      .flow-stage-body p { margin: 0; color: var(--muted); font-size: 12px; }
+      .flow-gate, .flow-io { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--muted); }
+      .flow-gate b, .flow-io { color: var(--text); }
+      .flow-gate-mode {
+        padding: 1px 8px;
+        border-radius: 6px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-weight: 700;
+      }
+
+      .flow-instance { margin-bottom: 16px; }
+      .flow-track {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 4px 2px 8px;
+      }
+      .flow-track-node {
+        flex: 1 0 150px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        position: relative;
+      }
+      .flow-track-node.current { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
+      .flow-track-name { font-weight: 700; font-size: 13px; color: var(--text); }
+      .flow-track-status { font-size: 11px; font-weight: 700; }
+      .flow-track-node.gate-pending .flow-track-status { color: var(--muted); }
+      .flow-track-node.gate-passed { background: var(--green-soft); }
+      .flow-track-node.gate-passed .flow-track-status { color: var(--green); }
+      .flow-track-node.gate-failed { background: var(--red-soft); }
+      .flow-track-node.gate-failed .flow-track-status { color: var(--red); }
+      .flow-track-node.gate-returned { background: var(--amber-soft); }
+      .flow-track-node.gate-returned .flow-track-status { color: var(--amber); }
+      .flow-track-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+      .button.tiny { min-height: 26px; padding: 0 9px; font-size: 11px; border-radius: 7px; }
+      .button.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+      .button.ghost:hover { border-color: var(--border-strong); }
     </style>
   </head>
   <body data-design-theme="slate">
@@ -4501,6 +4643,10 @@
           <button class="rail-tab" title="组织" data-rail-action="organization" aria-label="组织">
             <svg class="icon"><use href="#icon-users"></use></svg>
             <span>组织</span>
+          </button>
+          <button class="rail-tab" title="流程" data-rail-action="flow" aria-label="流程">
+            <svg class="icon"><use href="#icon-flow"></use></svg>
+            <span>流程</span>
           </button>
           <button class="rail-tab" title="设置" data-rail-action="settings" aria-label="设置">
             <svg class="icon"><use href="#icon-settings"></use></svg>

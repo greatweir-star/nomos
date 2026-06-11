@@ -257,6 +257,44 @@ const api = {
   initOrgDefaults() {
     return this.request("/api/org/init-defaults", { method: "POST" });
   },
+
+  // Flow API
+  flows(params = "") {
+    return this.request(`/api/flows${params ? "?" + params : ""}`);
+  },
+  flow(id) {
+    return this.request(`/api/flows/${id}`);
+  },
+  createFlow(payload) {
+    return this.request("/api/flows", { method: "POST", body: JSON.stringify(payload) });
+  },
+  updateFlow(id, payload) {
+    return this.request(`/api/flows/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  deleteFlow(id) {
+    return this.request(`/api/flows/${id}`, { method: "DELETE" });
+  },
+  initFlowPresets() {
+    return this.request("/api/flows/init-presets", { method: "POST" });
+  },
+  bindProjectFlow(projectId, flowTemplateId) {
+    return this.request(`/api/projects/${projectId}/flow`, {
+      method: "POST",
+      body: JSON.stringify({ flowTemplateId }),
+    });
+  },
+  unbindProjectFlow(projectId) {
+    return this.request(`/api/projects/${projectId}/flow`, { method: "DELETE" });
+  },
+  projectFlowProgress(projectId) {
+    return this.request(`/api/projects/${projectId}/flow/progress`);
+  },
+  reviewGate(projectId, flowStageId, payload) {
+    return this.request(`/api/projects/${projectId}/flow/stages/${flowStageId}/review`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 const state = {
@@ -277,6 +315,9 @@ const state = {
   editingEmployee: null,
   factoryEmployeeId: null,
   factoryStep: 0,
+  flowData: null,
+  flowSubPage: "library",
+  selectedFlowId: null,
 };
 
 const projectList = document.querySelector(".workspace .project-list");
@@ -2790,6 +2831,299 @@ function renderSettingsPage() {
   `;
 }
 
+const FLOW_CATEGORY_LABELS = { value: "价值流", enabling: "使能流", supporting: "支撑流" };
+const FLOW_REVIEW_LABELS = { carbon: "碳评审", silicon: "硅评审", hybrid: "碳硅评审" };
+const GATE_STATUS_META = {
+  pending: ["待评审", "gate-pending"],
+  passed: ["已通过", "gate-passed"],
+  failed: ["不通过", "gate-failed"],
+  returned: ["需返工", "gate-returned"],
+};
+
+async function loadFlowData() {
+  try {
+    const [flowsRes, workspace] = await Promise.all([api.flows(), api.workspace()]);
+    const templates = flowsRes.data || [];
+    const boundProjects = (workspace.projects || []).filter((p) => p.flowTemplateId);
+    const progress = await Promise.all(
+      boundProjects.map((p) => api.projectFlowProgress(p.id).then((r) => ({ project: p, ...r.data })).catch(() => null)),
+    );
+    state.flowData = { templates, instances: progress.filter(Boolean) };
+  } catch (error) {
+    console.error("加载流程数据失败:", error);
+    state.flowData = { templates: [], instances: [] };
+  }
+}
+
+function renderFlowPage() {
+  if (!state.flowData) {
+    emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Flow</div><h2>流程</h2><p>正在加载流程数据...</p></div></div>`;
+    run(async () => { await loadFlowData(); renderFlowPage(); });
+    return;
+  }
+  const subPages = [
+    { key: "library", label: "流程库" },
+    { key: "instances", label: "项目实例" },
+  ];
+  emptyPanel.innerHTML = `
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Flow</div>
+        <h2>流程</h2>
+        <p>定义可复用的流程模板，为项目绑定流程，用关口评审驱动每一阶段的准入准出。</p>
+      </div>
+      <button class="button primary" type="button" data-flow-create>新建流程</button>
+    </div>
+    <nav class="org-nav">
+      ${subPages.map((sp) => `<button class="org-nav-item${state.flowSubPage === sp.key ? " active" : ""}" data-flow-sub="${sp.key}">${sp.label}</button>`).join("")}
+    </nav>
+    <div id="flowSubContent"></div>
+  `;
+  emptyPanel.querySelector(".org-nav").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-flow-sub]");
+    if (!btn) return;
+    state.flowSubPage = btn.dataset.flowSub;
+    state.selectedFlowId = null;
+    renderFlowPage();
+  });
+  emptyPanel.querySelector("[data-flow-create]").addEventListener("click", openFlowCreateModal);
+
+  const container = document.getElementById("flowSubContent");
+  if (state.flowSubPage === "instances") renderFlowInstances(container);
+  else if (state.selectedFlowId) {
+    const template = state.flowData.templates.find((t) => t.id === state.selectedFlowId);
+    if (template) renderFlowDetail(container, template);
+    else { state.selectedFlowId = null; renderFlowLibrary(container); }
+  } else renderFlowLibrary(container);
+}
+
+function renderFlowLibrary(container) {
+  const templates = state.flowData.templates;
+  if (templates.length === 0) {
+    container.innerHTML = `
+      <section class="page-section">
+        <div class="section-head"><h3>快速开始</h3></div>
+        <p class="empty-copy">流程库还是空的。一键导入 LTC / IPD / ITR 三个开箱即用的轻量版流程模板，或自己新建一条。</p>
+        <button class="button primary" type="button" data-flow-presets>导入预设模板</button>
+      </section>`;
+    container.querySelector("[data-flow-presets]").addEventListener("click", initFlowPresets);
+    return;
+  }
+  const grouped = { value: [], enabling: [], supporting: [] };
+  for (const t of templates) (grouped[t.category] || (grouped[t.category] = [])).push(t);
+  container.innerHTML = `
+    <div class="flow-grid">
+      ${templates
+        .map(
+          (t) => `
+        <article class="flow-card" data-flow-open="${t.id}">
+          <div class="flow-card-head">
+            <span class="flow-badge cat-${t.category}">${FLOW_CATEGORY_LABELS[t.category] || t.category}</span>
+            ${t.isPreset ? '<span class="flow-badge preset">预设</span>' : ""}
+          </div>
+          <strong class="flow-card-title">${escapeHtml(t.name)}</strong>
+          <p class="flow-card-desc">${escapeHtml(t.description || "暂无描述")}</p>
+          <div class="flow-card-meta">
+            <span>${t.stageCount ?? t.stages.length} 个阶段</span>
+            <span>${t.usageCount || 0} 个项目使用</span>
+          </div>
+        </article>`,
+        )
+        .join("")}
+    </div>`;
+  container.querySelectorAll("[data-flow-open]").forEach((card) =>
+    card.addEventListener("click", () => {
+      state.selectedFlowId = card.dataset.flowOpen;
+      renderFlowPage();
+    }),
+  );
+}
+
+function renderFlowDetail(container, template) {
+  container.innerHTML = `
+    <div class="flow-detail-head">
+      <button class="button ghost" type="button" data-flow-back>← 返回流程库</button>
+      <div class="flow-detail-actions">
+        ${template.isPreset ? "" : `<button class="button" type="button" data-flow-rename>重命名</button>`}
+        <button class="button danger" type="button" data-flow-delete>删除</button>
+      </div>
+    </div>
+    <section class="page-section">
+      <div class="section-head">
+        <h3>${escapeHtml(template.name)} <span class="flow-badge cat-${template.category}">${FLOW_CATEGORY_LABELS[template.category] || template.category}</span></h3>
+      </div>
+      <p class="empty-copy">${escapeHtml(template.description || "暂无描述")}</p>
+      <ol class="flow-stage-list">
+        ${template.stages
+          .map(
+            (stage, index) => `
+          <li class="flow-stage-item">
+            <div class="flow-stage-index">${String(index + 1).padStart(2, "0")}</div>
+            <div class="flow-stage-body">
+              <strong>${escapeHtml(stage.name)}</strong>
+              ${stage.description ? `<p>${escapeHtml(stage.description)}</p>` : ""}
+              <div class="flow-gate">
+                <span class="flow-gate-mode">${FLOW_REVIEW_LABELS[stage.gate.reviewMode] || stage.gate.reviewMode}</span>
+                ${stage.gate.entryConditions ? `<span><b>准入</b>：${escapeHtml(stage.gate.entryConditions)}</span>` : ""}
+                ${stage.gate.exitCriteria ? `<span><b>准出</b>：${escapeHtml(stage.gate.exitCriteria)}</span>` : ""}
+              </div>
+              ${
+                (stage.inputMaterials || []).length || (stage.expectedOutputs || []).length
+                  ? `<div class="flow-io">
+                      ${(stage.inputMaterials || []).length ? `<span>输入：${stage.inputMaterials.map(escapeHtml).join("、")}</span>` : ""}
+                      ${(stage.expectedOutputs || []).length ? `<span>输出：${stage.expectedOutputs.map(escapeHtml).join("、")}</span>` : ""}
+                    </div>`
+                  : ""
+              }
+            </div>
+          </li>`,
+          )
+          .join("")}
+      </ol>
+    </section>`;
+  container.querySelector("[data-flow-back]").addEventListener("click", () => {
+    state.selectedFlowId = null;
+    renderFlowPage();
+  });
+  const renameBtn = container.querySelector("[data-flow-rename]");
+  if (renameBtn)
+    renameBtn.addEventListener("click", () =>
+      run(async () => {
+        const name = await askText("重命名流程", "流程名称", template.name, { confirmLabel: "保存" });
+        if (!name?.trim()) return;
+        await api.updateFlow(template.id, { name: name.trim() });
+        await loadFlowData();
+        renderFlowPage();
+        showToast("流程模板已更新");
+      }),
+    );
+  container.querySelector("[data-flow-delete]").addEventListener("click", () =>
+    run(async () => {
+      if (!(await askConfirm(`确认删除流程模板「${template.name}」吗？`, { title: "删除流程模板", danger: true, confirmLabel: "删除" }))) return;
+      try {
+        await api.deleteFlow(template.id);
+      } catch (error) {
+        showToast(error.message, "error");
+        return;
+      }
+      state.selectedFlowId = null;
+      await loadFlowData();
+      renderFlowPage();
+      showToast("流程模板已删除");
+    }),
+  );
+}
+
+function renderFlowInstances(container) {
+  const instances = state.flowData.instances;
+  if (instances.length === 0) {
+    container.innerHTML = `<p class="empty-copy">还没有项目绑定流程模板。在创建项目时选择一个流程模板，或在这里查看实例进度。</p>`;
+    return;
+  }
+  container.innerHTML = instances
+    .map((inst) => {
+      const template = state.flowData.templates.find((t) => t.id === inst.flowTemplateId);
+      const currentId = inst.currentFlowStageId;
+      return `
+      <section class="page-section flow-instance">
+        <div class="section-head">
+          <h3>${escapeHtml(inst.project.title)}</h3>
+          <span class="section-hint">${template ? escapeHtml(template.name) : "未知流程"} · ${inst.passed}/${inst.total} 关口通过${inst.completed ? " · 已完成" : ""}</span>
+        </div>
+        <div class="flow-track">
+          ${(inst.flowStages || [])
+            .map((s) => {
+              const [label, cls] = GATE_STATUS_META[s.gateStatus] || ["待评审", "gate-pending"];
+              const isCurrent = s.id === currentId;
+              return `
+              <div class="flow-track-node ${cls}${isCurrent ? " current" : ""}">
+                <span class="flow-track-name">${escapeHtml(s.name)}</span>
+                <span class="flow-track-status">${label}</span>
+                ${isCurrent && !inst.completed ? `
+                  <div class="flow-track-actions">
+                    <button class="button tiny primary" data-gate-pass="${inst.project.id}|${s.id}">通过</button>
+                    <button class="button tiny" data-gate-fail="${inst.project.id}|${s.id}">不通过</button>
+                    <button class="button tiny ghost" data-gate-rework="${inst.project.id}|${s.id}">返工</button>
+                  </div>` : ""}
+              </div>`;
+            })
+            .join("")}
+        </div>
+      </section>`;
+    })
+    .join("");
+
+  const onReview = (attr, action) =>
+    container.querySelectorAll(`[data-gate-${attr}]`).forEach((btn) =>
+      btn.addEventListener("click", () =>
+        run(async () => {
+          const [projectId, stageId] = btn.dataset[`gate${attr.charAt(0).toUpperCase()}${attr.slice(1)}`].split("|");
+          let payload = { action };
+          if (action === "fail" || action === "rework") {
+            const comment = await askText(action === "fail" ? "不通过原因" : "返工原因", "说明", "", { type: "textarea", confirmLabel: "提交" });
+            if (comment === null) return;
+            payload.comment = comment.trim();
+          }
+          await api.reviewGate(projectId, stageId, payload);
+          await loadFlowData();
+          renderFlowPage();
+          showToast(action === "pass" ? "关口已通过，进入下一阶段" : action === "fail" ? "已标记不通过" : "已返工到当前阶段");
+        }),
+      ),
+    );
+  onReview("pass", "pass");
+  onReview("fail", "fail");
+  onReview("rework", "rework");
+}
+
+function initFlowPresets() {
+  run(async () => {
+    try {
+      const result = await api.initFlowPresets();
+      await loadFlowData();
+      renderFlowPage();
+      showToast(`已导入 ${result.data.created} 个预设流程模板`);
+    } catch (error) {
+      showToast(error.message, "error");
+    }
+  });
+}
+
+function openFlowCreateModal() {
+  run(async () => {
+    const values = await openActionModal({
+      title: "新建流程模板",
+      description: "先填写流程基本信息，保存后可在详情中查看阶段。阶段用英文逗号或换行分隔。",
+      fields: [
+        { name: "name", label: "流程名称", placeholder: "例如：客户成功流程" },
+        { name: "category", label: "分类", type: "select", options: [
+          { value: "value", label: "价值流" },
+          { value: "enabling", label: "使能流" },
+          { value: "supporting", label: "支撑流" },
+        ] },
+        { name: "description", label: "描述", type: "textarea", placeholder: "这条流程解决什么问题", required: false },
+        { name: "stages", label: "阶段列表", type: "textarea", placeholder: "每行一个阶段名，例如：\n受理\n处理\n验收" },
+      ],
+      confirmLabel: "创建流程",
+    });
+    if (!values) return;
+    const stageNames = String(values.stages || "")
+      .split(/[\n,，]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    await api.createFlow({
+      name: values.name,
+      category: values.category || "value",
+      description: values.description || "",
+      stages: stageNames.map((name) => ({ name })),
+    });
+    await loadFlowData();
+    state.flowSubPage = "library";
+    renderFlowPage();
+    showToast("流程模板已创建");
+  });
+}
+
 function renderActiveTab() {
   const isOverview = state.activeTab === "overview";
   overviewPanel.style.display = isOverview ? "block" : "none";
@@ -2805,6 +3139,10 @@ function renderActiveTab() {
   }
   if (state.activeTab === "organization") {
     renderOrganizationPage();
+    return;
+  }
+  if (state.activeTab === "flow") {
+    renderFlowPage();
     return;
   }
   if (state.activeTab === "settings") {
@@ -3154,16 +3492,33 @@ messageInput.addEventListener("keydown", (event) => {
 
 newProjectButton.addEventListener("click", () => {
   run(async () => {
+    let templates = [];
+    try {
+      templates = (await api.flows()).data || [];
+    } catch {
+      templates = [];
+    }
+    const flowField = templates.length
+      ? [{
+          name: "flowTemplateId",
+          label: "流程模板（可选）",
+          type: "select",
+          required: false,
+          options: [{ value: "", label: "不绑定流程（自由模式）" }, ...templates.map((t) => ({ value: t.id, label: `${t.name}（${FLOW_CATEGORY_LABELS[t.category] || t.category}）` }))],
+        }]
+      : [];
     const values = await openActionModal({
       title: "创建新项目",
-      description: "先写清楚目标，nomos 会为项目建立五阶段交付链路。",
+      description: "先写清楚目标，nomos 会为项目建立五阶段交付链路。可选择一个流程模板，按关口推进。",
       fields: [
         { name: "title", label: "项目名称", placeholder: "例如：个人官网首版" },
         { name: "goal", label: "本轮目标", type: "textarea", placeholder: "说明希望 Agent 团队交付的结果" },
+        ...flowField,
       ],
       confirmLabel: "创建项目",
     });
     if (!values) return;
+    if (!values.flowTemplateId) delete values.flowTemplateId;
     const project = await api.createProject(values);
     await loadWorkspace(project.id);
     showToast("新项目已经创建");

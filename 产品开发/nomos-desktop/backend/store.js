@@ -6,13 +6,14 @@ const { randomUUID } = require("node:crypto");
 const { createDefaultData } = require("./default-data");
 const { mergeDefaultAgents, normalizeAdapterConfigs } = require("./agent-registry");
 const { ensureProjectWorkflow } = require("./workflow");
+const { normalizeFlowTemplate, ensureProjectFlowFields } = require("./flow");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function migrateData(data) {
-  data.version = Math.max(Number(data.version || 1), 7);
+  data.version = Math.max(Number(data.version || 1), 8);
   data.projects = Array.isArray(data.projects) ? data.projects : [];
   data.agents = Array.isArray(data.agents) ? data.agents : [];
   data.audit = Array.isArray(data.audit) ? data.audit : [];
@@ -20,6 +21,7 @@ function migrateData(data) {
   data.skills = Array.isArray(data.skills) ? data.skills : [];
   data.roles = Array.isArray(data.roles) ? data.roles : [];
   data.employees = Array.isArray(data.employees) ? data.employees : [];
+  data.flowTemplates = Array.isArray(data.flowTemplates) ? data.flowTemplates.map(normalizeFlowTemplate) : [];
   data.bridge = data.bridge || {
     id: "desktop-bridge",
     status: "offline",
@@ -33,7 +35,10 @@ function migrateData(data) {
     : {};
   data.agentAdapters = normalizeAdapterConfigs(data.agentAdapters);
   data.agents = mergeDefaultAgents(data.agents);
-  for (const project of data.projects) ensureProjectWorkflow(project);
+  for (const project of data.projects) {
+    ensureProjectWorkflow(project);
+    ensureProjectFlowFields(project);
+  }
   return data;
 }
 

@@ -20,10 +20,13 @@ nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本�
 - 组织管理模块：Skill 池、岗位、员工、Adapter 视图和组织健康度。
 - 默认 7 大岗位族模板，可按需初始化 21 个 Skill 和 8 个岗位。
 - 数字员工工厂前三步：岗位匹配、入职培训、师父带教和草稿恢复。
+- 流程管理模块（v1.2）：流程模板库（价值流/使能流/支撑流三级分类）、流程模板 CRUD、
+  LTC/IPD/ITR 三个开箱即用的预设轻量版模板、项目绑定/更换/解绑流程、关口评审状态机
+  （碳/硅/碳硅评审，通过进入下一阶段、不通过停留、需返工回退指定阶段）。
 
 ## 当前开发方式
 
-`1.1.0` 是组织管理版。开发调试仍可通过本地服务验收：
+`1.2.0` 是流程管理版。开发调试仍可通过本地服务验收：
 
 ```powershell
 npm run start:server
@@ -109,6 +112,12 @@ npm run dist:win
 - `GET /api/adapters`
 - `GET /api/org/health`
 - `POST /api/org/init-defaults`
+- `GET|POST /api/flows`
+- `POST /api/flows/init-presets`
+- `GET|PATCH|DELETE /api/flows/:id`
+- `POST|DELETE /api/projects/:id/flow`
+- `GET /api/projects/:id/flow/progress`
+- `POST /api/projects/:id/flow/stages/:flowStageId/review`
 - `GET /api/executions?projectId=:projectId`
 - `POST /api/executions/preview`
 - `POST /api/executions/:id/confirm`

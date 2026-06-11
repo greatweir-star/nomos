@@ -2,6 +2,7 @@
 
 const { randomUUID } = require("node:crypto");
 const { ensureProjectWorkflow } = require("./workflow");
+const { ensureProjectFlowFields } = require("./flow");
 const { createDefaultAgents, localAgentTemplates, normalizeAdapterConfigs } = require("./agent-registry");
 
 const LOCAL_AGENT_TEMPLATES = localAgentTemplates();
@@ -83,7 +84,7 @@ function createProject({
 }) {
   const now = new Date().toISOString();
   const stages = createStages(activeIndex);
-  return ensureProjectWorkflow({
+  return ensureProjectFlowFields(ensureProjectWorkflow({
     id,
     title,
     subtitle,
@@ -113,17 +114,18 @@ function createProject({
       },
     ],
     assets: [],
-  });
+  }));
 }
 
 function createDefaultData() {
   const now = new Date().toISOString();
 
   return {
-    version: 7,
+    version: 8,
     createdAt: now,
     updatedAt: now,
     projects: [],
+    flowTemplates: [],
     agents: createDefaultAgents(),
     agentAdapters: normalizeAdapterConfigs(),
     bridge: {

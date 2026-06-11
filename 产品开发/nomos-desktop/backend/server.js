@@ -20,6 +20,15 @@ const {
   submitStageReceipt,
   workflowPayload,
 } = require("./workflow");
+const {
+  createFlowTemplate,
+  applyFlowTemplatePatch,
+  bindProjectFlow,
+  unbindProjectFlow,
+  reviewGate,
+  flowProgress,
+  presetFlowTemplates,
+} = require("./flow");
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const FETCH_BLOCKED_PORTS = new Set([
@@ -85,6 +94,20 @@ function findEmployee(data, employeeId) {
   return data.employees.find((employee) => employee.id === employeeId);
 }
 
+function findFlowTemplate(data, flowId) {
+  return (data.flowTemplates || []).find((template) => template.id === flowId);
+}
+
+function projectsReferencingFlow(data, flowId) {
+  return data.projects
+    .filter((project) => project.flowTemplateId === flowId)
+    .map((project) => ({ id: project.id, title: project.title }));
+}
+
+function validRoleIdSet(data) {
+  return new Set(data.roles.map((role) => role.id));
+}
+
 const DRAFT_STATUS_ORDER = ["empty", "skill_matching", "onboarding", "mentorship", "draft_complete"];
 
 function validateDraftTransition(current, next) {
@@ -120,6 +143,7 @@ function summarizeProject(project) {
     unread: project.unread,
     activeStageKey: activeStage?.key ?? null,
     workflowStatus: project.workflow?.status || "active",
+    flowTemplateId: project.flowTemplateId || null,
     updatedAt: project.updatedAt,
   };
 }
@@ -270,9 +294,21 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
           team: body.team || "开发团队",
           activeIndex: 0,
         });
+        if (body.flowTemplateId) {
+          const data = store.snapshot();
+          const template = findFlowTemplate(data, body.flowTemplateId);
+          if (!template) {
+            sendError(response, 400, "指定的流程模板不存在");
+            return;
+          }
+          bindProjectFlow(project, template);
+        }
         store.update((data) => {
           data.projects.unshift(project);
-          store.audit("project.create", `创建项目：${project.title}`, { projectId: project.id });
+          store.audit("project.create", `创建项目：${project.title}`, {
+            projectId: project.id,
+            flowTemplateId: project.flowTemplateId || null,
+          });
           return project;
         });
         sendJson(response, 201, project);
@@ -664,6 +700,84 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
               return;
             }
             sendJson(response, 200, result);
+          } catch (error) {
+            sendError(response, 400, error.message);
+          }
+          return;
+        }
+
+        // POST /api/projects/:id/flow  绑定/更换流程模板
+        if (segments[3] === "flow" && segments.length === 4 && request.method === "POST") {
+          const body = await readJson(request);
+          const data = store.snapshot();
+          const template = findFlowTemplate(data, body.flowTemplateId);
+          if (!template) {
+            sendError(response, 400, "指定的流程模板不存在");
+            return;
+          }
+          const result = store.update((data) => {
+            const project = findProject(data, projectId);
+            if (!project) return null;
+            const rebind = Boolean(project.flowTemplateId);
+            bindProjectFlow(project, findFlowTemplate(data, body.flowTemplateId));
+            store.audit(rebind ? "project.flow.rebind" : "project.flow.bind", `项目绑定流程：${project.title} → ${template.name}`, {
+              projectId,
+              flowTemplateId: template.id,
+            });
+            return project;
+          });
+          if (!result) {
+            sendError(response, 404, "项目不存在");
+            return;
+          }
+          sendJson(response, 200, result);
+          return;
+        }
+
+        // DELETE /api/projects/:id/flow  解绑流程模板
+        if (segments[3] === "flow" && segments.length === 4 && request.method === "DELETE") {
+          const result = store.update((data) => {
+            const project = findProject(data, projectId);
+            if (!project) return null;
+            unbindProjectFlow(project);
+            store.audit("project.flow.unbind", `项目解绑流程：${project.title}`, { projectId });
+            return project;
+          });
+          if (!result) {
+            sendError(response, 404, "项目不存在");
+            return;
+          }
+          sendJson(response, 200, result);
+          return;
+        }
+
+        // POST /api/projects/:id/flow/stages/:stageId/review  关口评审
+        if (segments[3] === "flow" && segments[4] === "stages" && segments[5] && segments[6] === "review" && request.method === "POST") {
+          const body = await readJson(request);
+          try {
+            const result = store.update((data) => {
+              const project = findProject(data, projectId);
+              if (!project) return null;
+              const reviewed = reviewGate(project, {
+                flowStageId: segments[5],
+                action: body.action,
+                reviewer: body.reviewer,
+                reviewerType: body.reviewerType,
+                comment: body.comment,
+                targetStageId: body.targetStageId,
+              });
+              store.audit("project.flow.review", `关口评审：${project.title} / ${reviewed.stage.name} → ${body.action}`, {
+                projectId,
+                flowStageId: segments[5],
+                action: body.action,
+              });
+              return reviewed;
+            });
+            if (!result) {
+              sendError(response, 404, "项目不存在");
+              return;
+            }
+            sendJson(response, 200, { stage: result.stage, review: result.review, currentFlowStageId: result.currentFlowStageId, completed: result.completed });
           } catch (error) {
             sendError(response, 400, error.message);
           }
@@ -1347,6 +1461,163 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
       }
 
       // ─── End Organization Management API ───────────────────────────
+
+      // ─── Flow Management API ───────────────────────────────────────
+
+      // GET /api/flows  流程库（按分类浏览/搜索）
+      if (url.pathname === "/api/flows" && request.method === "GET") {
+        const data = store.snapshot();
+        let result = data.flowTemplates || [];
+        const category = url.searchParams.get("category");
+        const search = url.searchParams.get("search");
+        if (category) result = result.filter((t) => t.category === category);
+        if (search) {
+          const q = search.toLowerCase();
+          result = result.filter((t) =>
+            t.name.toLowerCase().includes(q) ||
+            (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
+          );
+        }
+        const usage = {};
+        for (const project of data.projects) {
+          if (project.flowTemplateId) usage[project.flowTemplateId] = (usage[project.flowTemplateId] || 0) + 1;
+        }
+        sendJson(response, 200, {
+          data: result.map((template) => ({
+            ...template,
+            stageCount: template.stages.length,
+            usageCount: usage[template.id] || 0,
+          })),
+        });
+        return;
+      }
+
+      // POST /api/flows  新建流程模板
+      if (url.pathname === "/api/flows" && request.method === "POST") {
+        const body = await readJson(request);
+        const data = store.snapshot();
+        if (body.name && data.flowTemplates.some((t) => t.name === String(body.name).trim())) {
+          sendError(response, 409, "同名流程模板已存在");
+          return;
+        }
+        let template;
+        try {
+          template = createFlowTemplate(body, { validRoleIds: validRoleIdSet(data) });
+        } catch (error) {
+          sendError(response, 400, error.message);
+          return;
+        }
+        store.update((data) => {
+          data.flowTemplates.push(template);
+          store.audit("flow.create", `创建流程模板：${template.name}`, { flowTemplateId: template.id });
+          return template;
+        });
+        sendJson(response, 201, { data: template });
+        return;
+      }
+
+      // POST /api/flows/init-presets  初始化预设模板（LTC/IPD/ITR 轻量版）
+      if (url.pathname === "/api/flows/init-presets" && request.method === "POST") {
+        const data = store.snapshot();
+        const existingPresetKeys = new Set((data.flowTemplates || []).filter((t) => t.presetKey).map((t) => t.presetKey));
+        const presets = presetFlowTemplates().filter((t) => !existingPresetKeys.has(t.presetKey));
+        if (presets.length === 0) {
+          sendError(response, 409, "预设流程模板已初始化");
+          return;
+        }
+        store.update((data) => {
+          data.flowTemplates.push(...presets);
+          store.audit("flow.init-presets", `初始化预设流程模板：新增 ${presets.length} 条`, { count: presets.length });
+          return presets;
+        });
+        sendJson(response, 201, { data: { created: presets.length, templates: presets } });
+        return;
+      }
+
+      // GET /api/flows/:id
+      if (segments[1] === "flows" && segments[2] && !segments[3] && request.method === "GET") {
+        const template = findFlowTemplate(store.snapshot(), segments[2]);
+        if (!template) {
+          sendError(response, 404, "流程模板不存在");
+          return;
+        }
+        sendJson(response, 200, { data: template });
+        return;
+      }
+
+      // PATCH /api/flows/:id
+      if (segments[1] === "flows" && segments[2] && !segments[3] && request.method === "PATCH") {
+        const body = await readJson(request);
+        const flowId = segments[2];
+        const data = store.snapshot();
+        if (body.name !== undefined) {
+          const newName = String(body.name).trim();
+          if (newName && data.flowTemplates.some((t) => t.id !== flowId && t.name === newName)) {
+            sendError(response, 409, "流程模板名称已被其他模板使用");
+            return;
+          }
+        }
+        let updateError = null;
+        const updated = store.update((data) => {
+          const template = findFlowTemplate(data, flowId);
+          if (!template) return null;
+          try {
+            applyFlowTemplatePatch(template, body, { validRoleIds: validRoleIdSet(data) });
+          } catch (error) {
+            updateError = error.message;
+            return template;
+          }
+          store.audit("flow.update", `更新流程模板：${template.name}`, { flowTemplateId: template.id });
+          return template;
+        });
+        if (!updated) {
+          sendError(response, 404, "流程模板不存在");
+          return;
+        }
+        if (updateError) {
+          sendError(response, 400, updateError);
+          return;
+        }
+        sendJson(response, 200, { data: updated });
+        return;
+      }
+
+      // DELETE /api/flows/:id  删除前检查是否被项目引用
+      if (segments[1] === "flows" && segments[2] && !segments[3] && request.method === "DELETE") {
+        const flowId = segments[2];
+        const data = store.snapshot();
+        const template = findFlowTemplate(data, flowId);
+        if (!template) {
+          sendError(response, 404, "流程模板不存在");
+          return;
+        }
+        const referencingProjects = projectsReferencingFlow(data, flowId);
+        if (referencingProjects.length > 0) {
+          sendJson(response, 409, { error: "流程模板正在被以下项目使用", referencingProjects });
+          return;
+        }
+        store.update((data) => {
+          const index = data.flowTemplates.findIndex((t) => t.id === flowId);
+          if (index !== -1) data.flowTemplates.splice(index, 1);
+          store.audit("flow.delete", `删除流程模板：${template.name}`, { flowTemplateId: flowId });
+          return { deleted: true };
+        });
+        sendJson(response, 200, { data: { deleted: true } });
+        return;
+      }
+
+      // GET /api/projects/:id/flow  项目流程进度（实例追踪）
+      if (segments[1] === "projects" && segments[2] && segments[3] === "flow" && segments[4] === "progress" && request.method === "GET") {
+        const project = findProject(store.snapshot(), segments[2]);
+        if (!project) {
+          sendError(response, 404, "项目不存在");
+          return;
+        }
+        sendJson(response, 200, { data: { ...flowProgress(project), flowStages: project.flowStages || [] } });
+        return;
+      }
+
+      // ─── End Flow Management API ────────────────────────────────────
 
       if (url.pathname === "/api/audit" && request.method === "GET") {
         sendJson(response, 200, store.snapshot().audit);

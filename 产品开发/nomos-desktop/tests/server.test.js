@@ -161,7 +161,7 @@ test("legacy project data migrates into the workflow model", () => {
     );
     const store = new JsonStore({ dataDir });
     const data = store.load();
-    assert.equal(data.version, 7);
+    assert.equal(data.version, 8);
     assert.equal(data.projects[0].workflow.currentStageKey, "prd");
     assert.equal(data.projects[0].workflow.status, "active");
     assert.equal(data.projects[0].stages[0].attempt, 1);
@@ -1157,7 +1157,7 @@ test("local backups require confirmation and diagnostics expose sanitized status
 
     const diagnostics = await fetch(`${url}/api/system/diagnostics`).then((response) => response.json());
     assert.equal(diagnostics.status, "ok");
-    assert.equal(diagnostics.dataVersion, 7);
+    assert.equal(diagnostics.dataVersion, 8);
     assert.equal(diagnostics.backupCount, 1);
     assert.equal(diagnostics.projectCount, 3);
     assert.equal(diagnostics.adapters.some((adapter) => adapter.id === "alice"), true);
@@ -1670,7 +1670,7 @@ test("default org template generation and idempotency", async () => {
   });
 });
 
-test("data migration from v6 to v7 preserves existing data", async () => {
+test("data migration from v6 to v8 preserves existing data", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "nomos-migrate-"));
   try {
     // Write v6 format data
@@ -1691,13 +1691,15 @@ test("data migration from v6 to v7 preserves existing data", async () => {
     const store = new JsonStore({ dataDir });
     const data = store.load();
 
-    assert.equal(data.version, 7);
+    assert.equal(data.version, 8);
     assert.ok(Array.isArray(data.skills));
     assert.ok(Array.isArray(data.roles));
     assert.ok(Array.isArray(data.employees));
+    assert.ok(Array.isArray(data.flowTemplates));
     assert.equal(data.skills.length, 0);
     assert.equal(data.roles.length, 0);
     assert.equal(data.employees.length, 0);
+    assert.equal(data.flowTemplates.length, 0);
 
     // Existing data preserved
     assert.ok(Array.isArray(data.projects));
@@ -1707,4 +1709,252 @@ test("data migration from v6 to v7 preserves existing data", async () => {
   } finally {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
+});
+
+// ─── v1.2 Flow Management ────────────────────────────────────────────
+
+async function createFlow(url, body) {
+  const response = await fetch(`${url}/api/flows`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return response;
+}
+
+const sampleFlowBody = {
+  name: "LTC 自定义",
+  description: "测试用流程",
+  category: "value",
+  tags: ["销售"],
+  stages: [
+    { name: "管理线索", gate: { reviewMode: "carbon", entryConditions: "有线索", exitCriteria: "线索分级" } },
+    { name: "管理机会点", gate: { reviewMode: "hybrid" } },
+    { name: "管理合同执行", gate: { reviewMode: "carbon" } },
+  ],
+};
+
+test("flow templates support full CRUD with validation", async () => {
+  await withServer(async (url) => {
+    // create
+    const created = await createFlow(url, sampleFlowBody);
+    assert.equal(created.status, 201);
+    const template = (await created.json()).data;
+    assert.ok(template.id);
+    assert.equal(template.category, "value");
+    assert.equal(template.stages.length, 3);
+    assert.equal(template.stages[0].order, 0);
+    assert.equal(template.stages[1].gate.reviewMode, "hybrid");
+    assert.equal(template.isPreset, false);
+
+    // empty name -> 400
+    const blank = await createFlow(url, { name: "", stages: [] });
+    assert.equal(blank.status, 400);
+
+    // invalid category -> 400
+    const badCategory = await createFlow(url, { name: "X", category: "nope", stages: [] });
+    assert.equal(badCategory.status, 400);
+
+    // duplicate name -> 409
+    const dup = await createFlow(url, sampleFlowBody);
+    assert.equal(dup.status, 409);
+
+    // list
+    const list = await (await fetch(`${url}/api/flows`)).json();
+    assert.equal(list.data.length, 1);
+    assert.equal(list.data[0].stageCount, 3);
+    assert.equal(list.data[0].usageCount, 0);
+
+    // list filter by category
+    const enablingList = await (await fetch(`${url}/api/flows?category=enabling`)).json();
+    assert.equal(enablingList.data.length, 0);
+
+    // get one
+    const one = await (await fetch(`${url}/api/flows/${template.id}`)).json();
+    assert.equal(one.data.name, "LTC 自定义");
+
+    // patch
+    const patched = await fetch(`${url}/api/flows/${template.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "LTC 改名", category: "enabling" }),
+    });
+    assert.equal(patched.status, 200);
+    const patchedTemplate = (await patched.json()).data;
+    assert.equal(patchedTemplate.name, "LTC 改名");
+    assert.equal(patchedTemplate.category, "enabling");
+
+    // delete
+    const deleted = await fetch(`${url}/api/flows/${template.id}`, { method: "DELETE" });
+    assert.equal(deleted.status, 200);
+    const emptyList = await (await fetch(`${url}/api/flows`)).json();
+    assert.equal(emptyList.data.length, 0);
+  });
+});
+
+test("preset flow templates initialize once and are idempotent", async () => {
+  await withServer(async (url) => {
+    const first = await fetch(`${url}/api/flows/init-presets`, { method: "POST" });
+    assert.equal(first.status, 201);
+    const result = (await first.json()).data;
+    assert.equal(result.created, 3);
+
+    const list = await (await fetch(`${url}/api/flows`)).json();
+    assert.equal(list.data.length, 3);
+    assert.ok(list.data.every((t) => t.isPreset === true));
+    assert.ok(list.data.some((t) => t.name === "LTC 轻量版"));
+    assert.ok(list.data.some((t) => t.name === "IPD 轻量版"));
+    assert.ok(list.data.some((t) => t.name === "ITR 轻量版"));
+
+    // second init is blocked
+    const second = await fetch(`${url}/api/flows/init-presets`, { method: "POST" });
+    assert.equal(second.status, 409);
+  });
+});
+
+test("projects bind, rebind and unbind flow templates", async () => {
+  await withServer(async (url) => {
+    const templateA = (await (await createFlow(url, sampleFlowBody)).json()).data;
+    const templateB = (await (await createFlow(url, { ...sampleFlowBody, name: "另一条流程" })).json()).data;
+
+    // bind on create
+    const created = await fetch(`${url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "绑定项目", goal: "测试绑定", flowTemplateId: templateA.id }),
+    });
+    assert.equal(created.status, 201);
+    const project = await created.json();
+    assert.equal(project.flowTemplateId, templateA.id);
+    assert.equal(project.flowStages.length, 3);
+    assert.ok(project.flowStages.every((s) => s.gateStatus === "pending"));
+
+    // usage count reflects binding
+    const list = await (await fetch(`${url}/api/flows`)).json();
+    assert.equal(list.data.find((t) => t.id === templateA.id).usageCount, 1);
+
+    // rebind to template B
+    const rebind = await fetch(`${url}/api/projects/${project.id}/flow`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flowTemplateId: templateB.id }),
+    });
+    assert.equal(rebind.status, 200);
+    assert.equal((await rebind.json()).flowTemplateId, templateB.id);
+
+    // delete-referenced check (template B is in use) -> 409
+    const blockedDelete = await fetch(`${url}/api/flows/${templateB.id}`, { method: "DELETE" });
+    assert.equal(blockedDelete.status, 409);
+    const blockedBody = await blockedDelete.json();
+    assert.equal(blockedBody.referencingProjects.length, 1);
+
+    // unbind
+    const unbind = await fetch(`${url}/api/projects/${project.id}/flow`, { method: "DELETE" });
+    assert.equal(unbind.status, 200);
+    const unbound = await unbind.json();
+    assert.equal(unbound.flowTemplateId, null);
+    assert.equal(unbound.flowStages.length, 0);
+
+    // now template B can be deleted
+    const okDelete = await fetch(`${url}/api/flows/${templateB.id}`, { method: "DELETE" });
+    assert.equal(okDelete.status, 200);
+  });
+});
+
+test("gate review advances, blocks and reworks the flow", async () => {
+  await withServer(async (url) => {
+    const template = (await (await createFlow(url, sampleFlowBody)).json()).data;
+    const project = await (await fetch(`${url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "评审项目", goal: "测试关口", flowTemplateId: template.id }),
+    })).json();
+    const [s1, s2, s3] = project.flowStages;
+
+    const review = (stageId, body) =>
+      fetch(`${url}/api/projects/${project.id}/flow/stages/${stageId}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    // cannot review a non-current stage
+    const outOfOrder = await review(s2.id, { action: "pass" });
+    assert.equal(outOfOrder.status, 400);
+
+    // pass stage 1 -> advances to stage 2
+    const pass1 = await review(s1.id, { action: "pass", reviewer: "总经理" });
+    assert.equal(pass1.status, 200);
+    const pass1Body = await pass1.json();
+    assert.equal(pass1Body.stage.gateStatus, "passed");
+    assert.equal(pass1Body.currentFlowStageId, s2.id);
+
+    // fail stage 2 -> stays current, marked failed
+    const fail2 = await review(s2.id, { action: "fail", comment: "材料不全" });
+    assert.equal(fail2.status, 200);
+    const fail2Body = await fail2.json();
+    assert.equal(fail2Body.stage.gateStatus, "failed");
+    assert.equal(fail2Body.currentFlowStageId, s2.id);
+
+    // pass stage 2 -> advances to stage 3
+    const pass2 = await review(s2.id, { action: "pass" });
+    assert.equal((await pass2.json()).currentFlowStageId, s3.id);
+
+    // rework stage 3 back to stage 1
+    const rework = await review(s3.id, { action: "rework", targetStageId: s1.id, comment: "需求变更" });
+    assert.equal(rework.status, 200);
+    const reworkBody = await rework.json();
+    assert.equal(reworkBody.currentFlowStageId, s1.id);
+
+    // verify gate statuses after rework: stage1 returned, others pending
+    const after = await (await fetch(`${url}/api/projects/${project.id}/flow/progress`)).json();
+    const byId = Object.fromEntries(after.data.flowStages.map((s) => [s.id, s.gateStatus]));
+    assert.equal(byId[s1.id], "returned");
+    assert.equal(byId[s2.id], "pending");
+    assert.equal(byId[s3.id], "pending");
+    assert.equal(after.data.completed, false);
+    assert.equal(after.data.passed, 0);
+
+    // pass all three -> completed
+    await review(s1.id, { action: "pass" });
+    await review(s2.id, { action: "pass" });
+    const final = await review(s3.id, { action: "pass" });
+    const finalBody = await final.json();
+    assert.equal(finalBody.completed, true);
+    assert.equal(finalBody.currentFlowStageId, null);
+  });
+});
+
+test("gate review rejects review on projects without a flow template", async () => {
+  await withServer(async (url) => {
+    const project = await (await fetch(`${url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "无流程项目", goal: "兼容性" }),
+    })).json();
+    // backward compatible defaults
+    assert.equal(project.flowTemplateId, null);
+    assert.ok(Array.isArray(project.flowStages));
+    assert.equal(project.flowStages.length, 0);
+    // existing five-stage workflow still present
+    assert.equal(project.stages.length, 5);
+
+    const review = await fetch(`${url}/api/projects/${project.id}/flow/stages/whatever/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pass" }),
+    });
+    assert.equal(review.status, 400);
+  });
+});
+
+test("binding a non-existent flow template is rejected", async () => {
+  await withServer(async (url) => {
+    const created = await fetch(`${url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "X", goal: "Y", flowTemplateId: "does-not-exist" }),
+    });
+    assert.equal(created.status, 400);
+  });
 });
