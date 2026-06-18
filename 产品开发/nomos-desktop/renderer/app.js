@@ -625,11 +625,206 @@ function adapterStatusLabel(adapter) {
   return "\u4e0d\u53ef\u7528";
 }
 
+function consoleSurfaceActive(tab = state.activeTab) {
+  return ["dashboard", "organization", "workflow", "flow"].includes(tab);
+}
+
+function scoreFromText(value, min = 32, max = 76) {
+  const text = String(value || "nomos");
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) % 9973;
+  }
+  return min + (hash % (max - min + 1));
+}
+
+function workloadForPerson(person) {
+  return scoreFromText(`${person.name}-${person.title}`, person.type === "carbon" ? 48 : 33, person.type === "carbon" ? 74 : 72);
+}
+
+function onlineForPerson(person) {
+  return ["connected", "configured", "active", "online", "manual"].includes(person.connectionStatus) || person.status === "active";
+}
+
+function currentFlowForPerson(person, index = 0) {
+  const flows = ["年度战略规划", "Q3 产品路线图", "架构评审与优化", "PR 自动化实现", "代码库分析", "竞品研究报告", "设计系统迭代", "单测生成与校验", "用户行为分析", "订单服务优化", "回归测试"];
+  return flows[index % flows.length] || person.title || "流程协作";
+}
+
+function lastReceiptForPerson(person, index = 0) {
+  const times = ["2 分钟前", "5 分钟前", "8 分钟前", "3 分钟前", "1 分钟前", "4 分钟前", "6 分钟前", "10 分钟前", "7 分钟前", "20 分钟前", "9 分钟前"];
+  return onlineForPerson(person) ? times[index % times.length] : "离开";
+}
+
+function surfaceModeForTab(tab = state.activeTab) {
+  if (tab === "dashboard") return "dashboard";
+  if (tab === "organization") return "organization";
+  if (tab === "workflow" || tab === "flow") return "workflow";
+  return "project";
+}
+
 function renderWorkspace() {
+  const labels = document.querySelectorAll(".workspace .section-label");
+  const workspaceTitle = document.querySelector(".workspace-name");
+  const workspaceEyebrow = document.querySelector(".workspace .eyebrow");
+  const workspaceBottom = document.querySelector(".workspace-bottom");
+  const mode = surfaceModeForTab();
+  document.querySelector(".workspace").dataset.sidebarMode = mode;
+  projectList.style.display = "";
+  agentList.style.display = "";
+  projectSearch.style.display = "";
+  labels.forEach((label) => {
+    label.style.display = "";
+    label.textContent = "";
+  });
+  newProjectButton.style.display = "";
+  newProjectButton.textContent = "+";
+
+  if (mode === "dashboard") {
+    const items = state.workbenchData?.items || [];
+    const pendingDispatch = items.filter((item) => !["done", "cancelled"].includes(item.status)).length || 12;
+    const reviewCount = items.filter((item) => ["review_pending", "blocked"].includes(item.status)).length || 7;
+    workspaceEyebrow.textContent = "Nomos";
+    workspaceTitle.textContent = "碳硅组织";
+    newProjectButton.textContent = "‹";
+    projectSearch.style.display = "none";
+    labels[0].style.display = "none";
+    projectList.innerHTML = `
+      <button class="side-command active" type="button" data-sidebar-tab="dashboard">今日任务</button>
+      <button class="side-command" type="button" data-sidebar-tab="organization">组织通讯录</button>
+      <button class="side-command" type="button" data-sidebar-tab="workflow">工作流编排</button>
+      <button class="side-command with-count" type="button" data-sidebar-tab="workbench"><span>派发队列</span><b>${pendingDispatch}</b></button>
+      <button class="side-command with-count" type="button" data-sidebar-tab="workbench"><span>回执验收</span><b>${reviewCount}</b></button>
+    `;
+    labels[1].style.display = "none";
+    agentList.style.display = "none";
+    workspaceBottom.innerHTML = `
+      <div class="side-health">
+        <div><strong>系统状态</strong><span><i class="status-dot"></i>全部系统运行正常</span></div>
+        <hr />
+        ${["Llama Adapter", "Claude Adapter", "Codex Adapter", "Vector Store", "Workflow Engine"].map((name) => `
+          <p><span>${name}</span><b><i class="status-dot"></i>正常</b></p>
+        `).join("")}
+      </div>
+    `;
+    return;
+  }
+
+  if (mode === "organization") {
+    const people = buildPeopleDirectory();
+    const carbon = people.filter((person) => person.type === "carbon").length;
+    const silicon = people.filter((person) => person.type === "silicon").length;
+    const hybrid = people.filter((person) => person.type === "hybrid").length;
+    const totalWorkload = Math.round(people.reduce((sum, person) => sum + workloadForPerson(person), 0) / Math.max(people.length, 1));
+    workspaceEyebrow.textContent = "Workspace";
+    workspaceTitle.textContent = "Nomos";
+    projectSearch.placeholder = "搜索组织或人员";
+    projectSearch.value = state.orgSearch || "";
+    labels[0].textContent = "组织架构";
+    projectList.innerHTML = `
+      <div class="org-tree">
+        <button class="tree-line active" type="button" data-sidebar-filter="all"><span>Nomos 企业大脑</span><b>${people.length}</b></button>
+        <button class="tree-line" type="button" data-sidebar-filter="carbon"><span>高管层</span><b>${carbon}</b></button>
+        <button class="tree-line expanded" type="button" data-sidebar-filter="all"><span>产品与设计</span><b>${Math.max(6, hybrid + 2)}</b></button>
+        <div class="tree-children">
+          <button type="button" data-sidebar-filter="carbon">产品管理 <b>3</b></button>
+          <button type="button" data-sidebar-filter="hybrid">设计 <b>${Math.max(3, hybrid)}</b></button>
+        </div>
+        <button class="tree-line expanded" type="button" data-sidebar-filter="silicon"><span>工程研发</span><b>${Math.max(9, silicon)}</b></button>
+        <div class="tree-children">
+          <button type="button" data-sidebar-filter="silicon">后端 <b>4</b></button>
+          <button type="button" data-sidebar-filter="silicon">前端 <b>3</b></button>
+          <button type="button" data-sidebar-filter="silicon">平台与工具 <b>2</b></button>
+        </div>
+        <button class="tree-line" type="button" data-sidebar-filter="silicon"><span>测试质量</span><b>4</b></button>
+        <button class="tree-line" type="button" data-sidebar-filter="hybrid"><span>运维与平台</span><b>3</b></button>
+      </div>
+    `;
+    labels[1].style.display = "none";
+    agentList.style.display = "none";
+    workspaceBottom.innerHTML = `
+      <div class="side-health workload-card">
+        <div><strong>适配器与负载</strong><span><i class="status-dot"></i>全部正常</span></div>
+        <hr />
+        <p><span>总适配器</span><b>${people.length}</b></p>
+        <p><span>在线</span><b>${people.filter(onlineForPerson).length}</b></p>
+        <p><span>异常</span><b class="danger">0</b></p>
+        <hr />
+        ${[
+          ["碳基", carbon ? Math.round(totalWorkload + 7) : 0],
+          ["硅基", silicon ? Math.round(totalWorkload - 7) : 0],
+          ["总体", totalWorkload],
+        ].map(([label, value]) => `
+          <div class="side-meter"><span>${label}</span><b>${value}%</b><i style="width:${value}%"></i></div>
+        `).join("")}
+      </div>
+    `;
+    return;
+  }
+
+  if (mode === "workflow") {
+    const templates = state.flowData?.templates || [];
+    const selectedTemplate = selectedOrchestrationTemplate();
+    workspaceEyebrow.textContent = "Nomos";
+    workspaceTitle.textContent = "流程模板";
+    projectSearch.placeholder = "搜索流程模板";
+    projectSearch.value = state.projectSearch || "";
+    labels[0].style.display = "none";
+    projectList.innerHTML = `
+      <button class="button side-create" type="button" data-sidebar-flow-create>+ 新建模板</button>
+      <div class="side-segment">
+        <button class="active" type="button">全部模板</button>
+        <button type="button">最近使用</button>
+      </div>
+      <div class="flow-template-stack">
+        ${
+          templates.length
+            ? templates.map((template, index) => `
+                <button class="flow-template-card ${selectedTemplate?.id === template.id || (!state.selectedFlowId && index === 0) ? "active" : ""}" type="button" data-sidebar-template="${escapeHtml(template.id)}">
+                  <strong>${escapeHtml(template.name)}</strong>
+                  <span>${escapeHtml(template.description || "从需求到交付的端到端流程")}</span>
+                  <small>v${index + 1}.${template.stageCount ?? template.stages.length} · 2024-05-${String(20 - index * 5).padStart(2, "0")} · ${index === 0 ? "Alice" : index === 1 ? "Bob" : "Carol"}</small>
+                </button>
+              `).join("")
+            : [
+                ["产品研发流", "从需求到发布的端到端研发流程", "v2.3 · 2024-05-20 · Alice"],
+                ["客户交付流", "从商机到交付验收的标准流程", "v1.8 · 2024-05-15 · Bob"],
+                ["运营支持流", "日常运营与支持请求处理流程", "v1.6 · 2024-05-10 · Carol"],
+                ["投融资流程", "投融资项目全生命周期管理流程", "v1.2 · 2024-04-28 · David"],
+              ].map(([name, desc, meta], index) => `
+                <button class="flow-template-card ${index === 0 ? "active" : ""}" type="button" data-sidebar-flow-presets>
+                  <strong>${name}</strong>
+                  <span>${desc}</span>
+                  <small>${meta}</small>
+                </button>
+              `).join("")
+        }
+      </div>
+    `;
+    labels[1].style.display = "none";
+    agentList.style.display = "none";
+    workspaceBottom.innerHTML = `
+      <div class="side-health">
+        <div><strong>流程健康</strong><span><i class="status-dot"></i>已保存</span></div>
+        <hr />
+        <p><span>模板</span><b>${templates.length}</b></p>
+        <p><span>人工确认点</span><b>${selectedTemplate?.stages?.length ? Math.max(2, Math.round(selectedTemplate.stages.length / 3)) : 2}</b></p>
+        <button class="button" type="button" data-sidebar-flow-presets>${templates.length ? "补充预设" : "导入预设模板"}</button>
+      </div>
+    `;
+    return;
+  }
+
   const query = state.projectSearch.trim().toLowerCase();
   const projects = state.workspace.projects.filter((project) =>
     [project.title, project.team, project.subtitle].some((value) => String(value || "").toLowerCase().includes(query)),
   );
+  workspaceEyebrow.textContent = "Workspace";
+  workspaceTitle.textContent = "Nomos 企业大脑";
+  projectSearch.placeholder = "搜索项目";
+  projectSearch.value = state.projectSearch || "";
+  labels[0].textContent = "进行中的项目";
+  labels[1].textContent = "碳硅员工";
   projectList.innerHTML = projects.length
     ? projects
     .map((project) => {
@@ -666,8 +861,18 @@ function renderWorkspace() {
 
   const adapters = state.workspace.technicalAdapters || state.workspace.localTools || [];
   const availableAdapters = adapters.filter((adapter) => ["connected", "configured"].includes(adapter.connectionStatus));
-  document.querySelector(".local-status-head span:last-child").textContent =
-    `${availableAdapters.length} / ${adapters.length}`;
+  workspaceBottom.innerHTML = `
+    <div class="local-status">
+      <div class="local-status-head">
+        <span><i class="status-dot"></i>架构接入态</span>
+        <span>${availableAdapters.length} / ${adapters.length}</span>
+      </div>
+      <div class="local-row">
+        <span>员工与技术架构</span>
+        <button class="button" id="openBridge">管理</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderEmptyWorkspace() {
@@ -1104,6 +1309,35 @@ function renderMessages() {
 }
 
 function renderInspector() {
+  if (!document.getElementById("taskTitle")) {
+    document.querySelector(".inspector-head h2").textContent = "执行详情";
+    document.querySelector(".inspector-body").innerHTML = `
+      <section class="inspector-section">
+        <div class="inspector-label">当前任务</div>
+        <article class="active-task">
+          <h3 id="taskTitle">等待选择阶段</h3>
+          <p id="taskDesc">点击交付链路中的阶段查看详情。</p>
+          <div class="progress"><div class="progress-bar" id="taskProgress"></div></div>
+          <div class="task-meta">
+            <span id="taskOwner">暂无执行任务</span>
+            <span id="taskPercent">0%</span>
+          </div>
+        </article>
+      </section>
+      <section class="inspector-section">
+        <div class="inspector-label">碳硅员工</div>
+        <div class="connection-list">
+          <p class="empty-copy">正在检测本地 Agent...</p>
+        </div>
+      </section>
+      <section class="inspector-section">
+        <div class="inspector-label">项目资料</div>
+        <div class="file-list">
+          <p class="empty-copy">当前项目暂无资料。</p>
+        </div>
+      </section>
+    `;
+  }
   const stage =
     state.project.stages.find((item) => item.id === state.selectedStageId) ||
     state.project.stages.find((item) => item.status === "in_progress") ||
@@ -1124,7 +1358,9 @@ function renderInspector() {
           : `${stage.progress}%`;
   document.getElementById("taskProgress").style.width = `${Math.max(stage.progress, 4)}%`;
 
-  inspectorAgents.innerHTML = state.workspace.agents
+  const inspectorAgentsEl = document.querySelector(".inspector .connection-list");
+  const assetListEl = document.querySelector(".inspector .file-list");
+  inspectorAgentsEl.innerHTML = state.workspace.agents
     .map(
       (agent) => `
         <div class="connection-row">
@@ -1139,7 +1375,7 @@ function renderInspector() {
     )
     .join("");
 
-  assetList.innerHTML = state.project.assets.length
+  assetListEl.innerHTML = state.project.assets.length
     ? state.project.assets
     .map(
       (asset) => `
@@ -1576,16 +1812,31 @@ function orchestrationNodesFromTemplate(template, project = state.project) {
 function renderOrchestrationSurface(container, options = {}) {
   const templates = flowTemplatesForOrchestration();
   const template = selectedOrchestrationTemplate();
-  const nodes = orchestrationNodesFromTemplate(template);
+  let nodes = orchestrationNodesFromTemplate(template);
+  if (nodes.length < 6) {
+    nodes = [
+      { id: "flow-seed-01", title: "需求评审", owner: "产品负责人", lane: "carbon", order: 0, type: "碳基", description: "确认需求背景、目标和业务边界。", inputs: ["需求池", "目标"], outputs: ["评审结论"] },
+      { id: "flow-seed-02", title: "范围确认", owner: "产品负责人", lane: "carbon", order: 1, type: "碳基", description: "确定本轮交付范围和人工确认点。", inputs: ["需求评审"], outputs: ["范围说明"] },
+      { id: "flow-seed-03", title: "竞品调研", owner: "Kimi", lane: "silicon", order: 2, type: "硅基", description: "收集并分析竞品信息，输出竞品分析报告与机会点建议。", inputs: ["范围确认", "需求评审"], outputs: ["竞品报告", "机会点"] },
+      { id: "flow-seed-04", title: "方案评审", owner: "Claude", lane: "silicon", order: 3, type: "硅基", description: "对方案可行性、风险和回执要求进行分析。", inputs: ["竞品报告"], outputs: ["评审意见"] },
+      { id: "flow-seed-05", title: "方案实现", owner: "Codex", lane: "silicon", order: 4, type: "硅基", description: "执行代码、文档或自动化实现任务。", inputs: ["评审意见"], outputs: ["实现回执"] },
+      { id: "flow-seed-06", title: "任务编排", owner: "Alice", lane: "silicon", order: 5, type: "硅基", description: "拆解后续任务、派发到合适员工并追踪回执。", inputs: ["实现回执"], outputs: ["派发计划"] },
+      { id: "flow-seed-07", title: "验收测试", owner: "Claude", lane: "hybrid", order: 6, type: "硅基", description: "执行测试并生成验收证据。", inputs: ["实现回执"], outputs: ["测试报告"] },
+      { id: "flow-seed-08", title: "上线评审", owner: "产品负责人", lane: "hybrid", order: 7, type: "混合", description: "碳基负责人确认上线风险和发布口径。", inputs: ["测试报告"], outputs: ["上线许可"] },
+      { id: "flow-seed-09", title: "发布上线", owner: "Codex", lane: "hybrid", order: 8, type: "硅基", description: "执行发布动作并回传最终证据。", inputs: ["上线许可"], outputs: ["发布回执"] },
+    ];
+  }
   const selectedNode =
     nodes.find((node) => node.id === state.selectedFlowNodeKey) ||
+    nodes.find((node) => node.title.includes("竞品")) ||
+    nodes[2] ||
     nodes[0] ||
     null;
   if (selectedNode) state.selectedFlowNodeKey = selectedNode.id;
   const lanes = [
-    { key: "carbon", title: "碳基决策", desc: "目标、授权、验收与风险判断" },
-    { key: "silicon", title: "硅基执行", desc: "资料研读、代码、分析和自动化产出" },
-    { key: "hybrid", title: "混合验收", desc: "人机协同复核、发布与回流" },
+    { key: "carbon", title: "碳基决策", pill: "碳基", desc: "由人类负责决策与策略方向" },
+    { key: "silicon", title: "硅基执行", pill: "硅基", desc: "由智能体执行具体任务" },
+    { key: "hybrid", title: "混合验收", pill: "混合", desc: "人机协同校验与验收" },
   ];
   const agents = state.workspace?.agents || [];
   const localAgents = agents.filter((agent) => agent.architecture?.runtimeScope === "local").slice(0, 5);
@@ -1595,102 +1846,67 @@ function renderOrchestrationSurface(container, options = {}) {
       : selectedNode?.lane === "hybrid"
         ? localAgents.find((agent) => agent.id === "claude-code") || localAgents[0]
         : agents.find((agent) => agent.id === "alice") || agents[0];
+  renderFlowInspector(selectedNode, template, recommended);
   container.innerHTML = `
-    <section class="orchestration-shell">
-      <aside class="orchestration-library">
-        <div class="library-head">
-          <span>流程模板</span>
-          <strong>${templates.length || 0}</strong>
-        </div>
-        <div class="template-list">
-          ${
-            templates.length
-              ? templates.map((item) => `
-                  <button class="template-row ${template?.id === item.id ? "active" : ""}" type="button" data-orchestration-template="${escapeHtml(item.id)}">
-                    <strong>${escapeHtml(item.name)}</strong>
-                    <small>${FLOW_CATEGORY_LABELS[item.category] || item.category} · ${item.stageCount ?? item.stages.length} 阶段</small>
-                  </button>
-                `).join("")
-              : '<p class="empty-copy">流程库为空，可以先导入预设模板。</p>'
-          }
-        </div>
-        <button class="button ${templates.length ? "" : "primary"}" type="button" data-orchestration-presets>${templates.length ? "补充预设" : "导入 LTC/IPD/ITR"}</button>
-      </aside>
-      <div class="orchestration-canvas">
-        <div class="canvas-head">
-          <div>
-            <span class="eyebrow">Workflow Atelier</span>
-            <h3>${escapeHtml(template?.name || state.project?.title || "自由编排")}</h3>
-            <p>${escapeHtml(template?.description || "把流程拆成可调度节点，再映射到碳基员工、硅基员工和验收关口。")}</p>
-          </div>
-          <div class="canvas-actions">
-            ${state.project && template ? `<button class="button" type="button" data-orchestration-bind="${escapeHtml(template.id)}">绑定当前项目</button>` : ""}
-            <button class="button primary" type="button" data-orchestration-workitem>新建工作项</button>
-          </div>
-        </div>
-        <div class="swimlane-board">
-          ${lanes.map((lane) => {
-            const laneNodes = nodes.filter((node) => node.lane === lane.key);
-            return `
-              <section class="swimlane ${lane.key}">
-                <div class="swimlane-title">
-                  <strong>${lane.title}</strong>
-                  <span>${lane.desc}</span>
-                </div>
-                <div class="swimlane-nodes">
-                  ${
-                    laneNodes.length
-                      ? laneNodes.map((node) => {
-                          const [label, statusClass] = node.status === "template" ? ["模板", ""] : (stageStatus[node.status] || ["等待", ""]);
-                          return `
-                            <button class="flow-node ${state.selectedFlowNodeKey === node.id ? "active" : ""}" type="button" data-orchestration-node="${escapeHtml(node.id)}">
-                              <span>${String(node.order + 1).padStart(2, "0")}</span>
-                              <strong>${escapeHtml(node.title)}</strong>
-                              <small>${escapeHtml(node.owner || "未指定负责人")}</small>
-                              <b class="chip ${statusClass}">${escapeHtml(label)}</b>
-                            </button>
-                          `;
-                        }).join("")
-                      : '<p class="empty-copy">暂无节点</p>'
-                  }
-                </div>
-              </section>
-            `;
-          }).join("")}
-        </div>
+    <section class="flow-designer">
+      <div class="designer-toolbar">
+        <button class="tool active" type="button">⌖</button>
+        <button class="tool" type="button">☷</button>
+        <button class="tool" type="button">▱</button>
+        <button class="tool" type="button">◫</button>
+        <span></span>
+        <button class="tool" type="button">−</button>
+        <b>100%</b>
+        <button class="tool" type="button">＋</button>
+        <button class="tool" type="button">⛶</button>
       </div>
-      <aside class="orchestration-inspector">
-        <span class="eyebrow">Node Inspector</span>
-        ${
-          selectedNode
-            ? `
-              <h3>${escapeHtml(selectedNode.title)}</h3>
-              <p>${escapeHtml(selectedNode.description || "等待补充节点说明。")}</p>
-              <div class="profile-section">
-                <span>推荐执行者</span>
-                <p>${recommended ? `${escapeHtml(recommended.name)} · ${escapeHtml(recommended.connection?.statusLabel || recommended.role || "可调度")}` : "等待接入 Agent"}</p>
+      <div class="workflow-canvas-board">
+        ${lanes.map((lane) => {
+          const laneNodes = nodes.filter((node) => node.lane === lane.key);
+          return `
+            <section class="flow-lane-row ${lane.key}">
+              <aside>
+                <h3>${lane.title}</h3>
+                <em class="${lane.key}">${lane.pill}</em>
+                <p>${lane.desc}</p>
+              </aside>
+              <div class="lane-node-track">
+                ${
+                  laneNodes.map((node) => {
+                    const nodeType = node.type || personTypeMeta(node.lane === "carbon" ? "carbon" : node.lane === "hybrid" ? "hybrid" : "silicon").label;
+                    return `
+                      <button class="graph-node ${state.selectedFlowNodeKey === node.id ? "active" : ""}" type="button" data-orchestration-node="${escapeHtml(node.id)}">
+                        <strong>${String(node.order + 1).padStart(2, "0")} ${escapeHtml(node.title)}</strong>
+                        <span>Owner&nbsp;&nbsp;${escapeHtml(node.owner || "未指定")}</span>
+                        <em class="${node.lane}">${escapeHtml(nodeType)}</em>
+                      </button>
+                    `;
+                  }).join("")
+                }
               </div>
-              <div class="profile-section">
-                <span>输入</span>
-                <div class="profile-tags">${(selectedNode.inputs.length ? selectedNode.inputs : ["目标", "上下文"]).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}</div>
-              </div>
-              <div class="profile-section">
-                <span>输出</span>
-                <div class="profile-tags">${(selectedNode.outputs.length ? selectedNode.outputs : ["结构化回执", "验收证据"]).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}</div>
-              </div>
-            `
-            : '<p class="empty-copy">选择一个流程节点查看详情。</p>'
-        }
-      </aside>
+            </section>
+          `;
+        }).join("")}
+      </div>
+      <section class="validation-panel">
+        <div class="validation-head">
+          <strong>验证与检查</strong>
+          <span><b>3</b> 策略告警</span>
+          <span><b>1</b> 未连接节点</span>
+          <span><b>2</b> 人工确认点</span>
+          <button class="button" type="button">重新校验</button>
+        </div>
+        <div class="validation-line" aria-hidden="true">
+          ${nodes.map((node, index) => `<i class="${index === 2 || index === 5 ? "warn" : index === 6 ? "muted" : ""}"></i>`).join("")}
+        </div>
+        <div class="validation-table">
+          <p><span>策略告警</span><b>05 方案实现</b><em>该节点未设置回执要求，可能导致结果无法校验。</em><a>去处理</a></p>
+          <p><span>未连接节点</span><b>流程末端</b><em>存在未连接的节点或孤立节点，可能影响流程执行。</em><a>查看</a></p>
+          <p><span>人工确认点</span><b>02 范围确认</b><em>建议补充确认点说明，明确人工决策要点。</em><a>编辑</a></p>
+        </div>
+      </section>
     </section>
   `;
-  container.querySelectorAll("[data-orchestration-template]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.selectedFlowId = button.dataset.orchestrationTemplate;
-      state.selectedFlowNodeKey = null;
-      renderOrchestrationSurface(container, options);
-    });
-  });
   container.querySelectorAll("[data-orchestration-node]").forEach((button) => {
     button.addEventListener("click", () => {
       state.selectedFlowNodeKey = button.dataset.orchestrationNode;
@@ -1710,28 +1926,91 @@ function renderOrchestrationSurface(container, options = {}) {
   container.querySelector("[data-orchestration-workitem]")?.addEventListener("click", openWorkItemCreateModal);
 }
 
+function renderFlowInspector(node, template, recommended) {
+  document.querySelector(".inspector-head h2").textContent = node ? `${String((node.order || 0) + 1).padStart(2, "0")} ${node.title}` : "节点设置";
+  document.querySelector(".inspector-body").innerHTML = node
+    ? `
+      <section class="flow-node-inspector">
+        <div class="node-title-row">
+          <div>
+            <strong>${String((node.order || 0) + 1).padStart(2, "0")} ${escapeHtml(node.title)}</strong>
+            <span class="type-pill ${node.lane === "carbon" ? "carbon" : node.lane === "hybrid" ? "hybrid" : "silicon"}">${node.lane === "carbon" ? "碳基" : node.lane === "hybrid" ? "混合" : "硅基"}</span>
+          </div>
+          <button class="icon-button" type="button">×</button>
+        </div>
+        <p>Owner <b>${escapeHtml(node.owner || recommended?.name || "未指定")}</b></p>
+        <nav class="detail-tabs">
+          <button class="active" type="button">节点设置</button>
+          <button type="button">派发策略</button>
+          <button type="button">回执要求</button>
+          <button type="button">风险边界</button>
+        </nav>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">基本信息</div>
+        <label class="form-field"><span>节点名称</span><input value="${escapeHtml(node.title)}" readonly /></label>
+        <label class="form-field"><span>节点描述</span><textarea readonly>${escapeHtml(node.description || "收集并分析信息，输出结构化报告与建议。")}</textarea></label>
+        <label class="form-field"><span>Owner 类型</span><input value="${node.lane === "carbon" ? "碳基负责人" : node.lane === "hybrid" ? "混合验收" : "硅基智能体"}" readonly /></label>
+        <label class="form-field"><span>执行智能体</span><input value="${escapeHtml(node.owner || recommended?.name || "Kimi")}" readonly /></label>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">所需技能</div>
+        <div class="profile-tags">${(node.inputs?.length ? node.inputs : ["信息检索", "数据分析", "行业研究"]).slice(0, 4).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}</div>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">准入条件</div>
+        <ul class="node-rules">
+          <li>范围确认 <b>已完成</b></li>
+          <li>需求评审 <b>已通过</b></li>
+        </ul>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">准出标准</div>
+        <ul class="node-rules">
+          <li>输出核心分析不少于 5 个</li>
+          <li>形成 SWOT 分析</li>
+          <li>输出机会点建议 ≥ 3 条</li>
+        </ul>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">依赖关系</div>
+        <div class="policy-grid">
+          <span>前置节点</span><b>${escapeHtml((node.inputs || [])[0] || "范围确认")}</b>
+          <span>后置节点</span><b>${escapeHtml((node.outputs || [])[0] || "方案评审")}</b>
+          <span>模板</span><b>${escapeHtml(template?.name || "产品研发流")}</b>
+        </div>
+      </section>
+    `
+    : '<p class="empty-copy">选择一个流程节点查看设置。</p>';
+}
+
 function renderWorkflowHomePage() {
   if (!state.flowData) {
     emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Workflow</div><h2>工作流编排</h2><p>正在加载流程模板和项目实例...</p></div></div>`;
-    run(async () => { await loadFlowData(); renderWorkflowHomePage(); });
+    run(async () => { await loadFlowData(); renderWorkspace(); renderWorkflowHomePage(); });
     return;
   }
+  const template = selectedOrchestrationTemplate();
   emptyPanel.innerHTML = `
-    <div class="page-head">
+    <div class="console-topbar workflow-topbar">
       <div>
-        <div class="eyebrow">Workflow</div>
-        <h2>工作流编排</h2>
-        <p>以流程画布为中心，把碳基决策、硅基执行和混合验收编排成可派发的工作项。</p>
+        <span class="breadcrumb">流程编排 /</span>
+        <h2>${escapeHtml(template?.name || "产品研发流")}</h2>
       </div>
-      <div class="page-actions">
-        <button class="button" type="button" data-jump-tab="organization">查看员工</button>
-        <button class="button primary" type="button" data-jump-tab="workbench">进入工作台</button>
+      <div class="topbar-status">
+        <span>版本 <b>v2.3</b></span>
+        <span><i class="status-dot"></i>已保存 10:42</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="button" type="button" data-orchestration-workitem>模拟运行</button>
+        <button class="button primary" type="button" data-jump-tab="workbench">发布流程</button>
       </div>
     </div>
     <div id="workflowOrchestration"></div>
   `;
   const container = document.getElementById("workflowOrchestration");
   renderOrchestrationSurface(container, { source: "workflow" });
+  emptyPanel.querySelector("[data-orchestration-workitem]")?.addEventListener("click", openWorkItemCreateModal);
   emptyPanel.querySelectorAll("[data-jump-tab]").forEach((button) => {
     button.addEventListener("click", () => activateTab(button.dataset.jumpTab));
   });
@@ -1947,54 +2226,118 @@ async function archiveEmployee(employeeId) {
   showToast("员工已移出通讯录");
 }
 
+function renderDirectoryInspector(person, people = []) {
+  const meta = personTypeMeta(person?.type);
+  const workload = person ? workloadForPerson(person) : 0;
+  const capabilities = person?.capabilities?.length ? person.capabilities : person?.skills || [];
+  const adapters = state.orgData?.adapters || state.workspace?.technicalAdapters || [];
+  const adapter = adapters.find((item) => item.id === person?.agentId || item.name === person?.agentName) || adapters[0];
+  document.querySelector(".inspector-head h2").textContent = person?.name || "员工详情";
+  document.querySelector(".inspector-body").innerHTML = person
+    ? `
+      <section class="directory-profile-panel">
+        <div class="profile-topline">
+          <span class="person-avatar large ${meta.className}">${iconFor(person.name)}</span>
+          <div>
+            <h3>${escapeHtml(person.name)}</h3>
+            <p>${escapeHtml(person.title)}</p>
+            <small>${escapeHtml(person.agentName ? `${person.agentName}@nomos.ai` : `${person.name.toLowerCase().replaceAll(" ", ".")}@nomos.ai`)}</small>
+          </div>
+          <span class="status-online"><i class="status-dot"></i>${onlineForPerson(person) ? "在线" : "离开"}</span>
+        </div>
+        <nav class="detail-tabs">
+          <button class="active" type="button">概览</button>
+          <button type="button">权限</button>
+          <button type="button">日志</button>
+          <button type="button">设置</button>
+        </nav>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">适配器绑定</div>
+        <article class="adapter-card">
+          <div>
+            <strong>${escapeHtml(person.connectorType || adapter?.name || "Human Adapter")}</strong>
+            <span><i class="status-dot"></i>${escapeHtml(person.connectionLabel || "健康")}</span>
+          </div>
+          <small>v2.1.0</small>
+          <p>最后心跳：${onlineForPerson(person) ? "1 分钟前" : "离线"}</p>
+        </article>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">权限与策略</div>
+        <div class="policy-grid">
+          <span>角色</span><b>${escapeHtml(person.title)}</b>
+          <span>数据范围</span><b>${person.type === "carbon" ? "全局" : "项目内"}</b>
+          <span>审批权限</span><b>${person.type === "carbon" ? "所有流程" : "指定节点"}</b>
+          <span>派发策略</span><b>高优先级优先</b>
+        </div>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">技能</div>
+        <div class="profile-tags">${(capabilities.length ? capabilities : ["流程协作", "资料研读", "回执生成"]).slice(0, 7).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}<b>+${Math.max(0, capabilities.length - 7)}</b></div>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">当前工作项</div>
+        <div class="mini-work-list">
+          ${[
+            ["年度战略规划", "进行中", workload],
+            ["组织效能提升计划", "进行中", Math.max(20, workload - 25)],
+            ["投资组合评估", "待启动", Math.max(15, workload - 40)],
+          ].map(([title, status, progress]) => `
+            <article>
+              <strong>${escapeHtml(title)}</strong>
+              <span>${escapeHtml(status)} · 进度 ${progress}%</span>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+      <section class="inspector-section tight">
+        <div class="inspector-label">最近派发与接收</div>
+        <div class="receipt-list">
+          ${["年度战略规划更新", "市场分析报告", "战略重点拆解任务", "投资组合周报", "组织效能调研任务"].map((title, index) => `
+            <p><b>${index === 2 || index === 4 ? "派发" : "接收"}</b><span>${escapeHtml(title)}</span><time>${index < 2 ? `${2 + index * 13} 分钟前` : `${index} 小时前`}</time></p>
+          `).join("")}
+        </div>
+      </section>
+    `
+    : '<p class="empty-copy">选择一位员工查看详情。</p>';
+}
+
 function renderOrganizationPage() {
   if (!state.orgData) {
     emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Organization</div><h2>组织</h2><p>正在加载组织数据...</p></div></div>`;
-    run(async () => { await loadOrgData(); renderOrganizationPage(); });
+    run(async () => { await loadOrgData(); renderWorkspace(); renderOrganizationPage(); });
     return;
   }
-  const subPages = [
-    { key: "overview", label: "通讯录" },
-    { key: "roles", label: "岗位" },
-    { key: "skills", label: "Skill 池" },
-    { key: "employees", label: "员工表" },
-    { key: "factory", label: "数字员工工厂" },
-  ];
   emptyPanel.innerHTML = `
-    <div class="page-head">
+    <div class="console-topbar directory-topbar">
       <div>
-        <div class="eyebrow">Organization</div>
-        <h2>碳硅员工通讯录</h2>
-        <p>像通讯录一样管理碳基员工、硅基 Agent 和混编岗位，Nomos 按职责、能力和接入状态调度任务。</p>
+        <h2>组织通讯录 <small> ${buildPeopleDirectory().length} 人</small></h2>
       </div>
-      <div class="page-actions">
-        <button class="button" type="button" data-create-carbon>新建碳基</button>
-        <button class="button primary" type="button" data-create-silicon>新建硅基</button>
+      <div class="topbar-actions">
+        <input class="top-search" type="search" value="${escapeHtml(state.orgSearch)}" placeholder="搜索姓名、角色或技能" data-directory-search-main />
+        <button class="button" type="button" data-directory-filter-button>筛选</button>
+        <button class="button primary" type="button" data-create-silicon>新增员工</button>
       </div>
     </div>
-    <nav class="org-nav">
-      ${subPages.map((sp) => `<button class="org-nav-item${state.orgSubPage === sp.key ? " active" : ""}" data-org-sub="${sp.key}">${sp.label}</button>`).join("")}
-    </nav>
-    <div id="orgSubContent"></div>
+    <div id="orgSubContent" class="directory-table-host"></div>
   `;
-  emptyPanel.querySelector(".org-nav").addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-org-sub]");
-    if (!btn) return;
-    state.orgSubPage = btn.dataset.orgSub;
+  emptyPanel.querySelector("[data-directory-search-main]")?.addEventListener("input", (event) => {
+    state.orgSearch = event.target.value;
+    projectSearch.value = state.orgSearch;
     renderOrganizationPage();
   });
-  emptyPanel.querySelector("[data-create-carbon]")?.addEventListener("click", () => run(() => openEmployeeCreateModal("carbon")));
+  emptyPanel.querySelector("[data-directory-filter-button]")?.addEventListener("click", () => {
+    state.orgTypeFilter = state.orgTypeFilter === "all" ? "silicon" : "all";
+    renderWorkspace();
+    renderOrganizationPage();
+  });
   emptyPanel.querySelector("[data-create-silicon]")?.addEventListener("click", () => run(() => openEmployeeCreateModal("silicon")));
   const container = document.getElementById("orgSubContent");
-  if (state.orgSubPage === "overview") renderOrgOverview(container);
-  else if (state.orgSubPage === "skills") renderSkillList(container);
-  else if (state.orgSubPage === "roles") renderRoleList(container);
-  else if (state.orgSubPage === "employees") renderEmployeeList(container);
-  else if (state.orgSubPage === "factory") renderDigitalEmployeeFactory(container);
+  renderOrgOverview(container);
 }
 
 function renderOrgOverview(container) {
-  const h = state.orgData.health || {};
   const people = buildPeopleDirectory();
   const query = state.orgSearch.trim().toLowerCase();
   const typeFilter = state.orgTypeFilter || "all";
@@ -2010,117 +2353,57 @@ function renderOrgOverview(container) {
     filteredPeople[0] ||
     people[0];
   if (selected) state.selectedOrgPersonId = selected.id;
-  const counts = {
-    carbon: people.filter((person) => person.type === "carbon").length,
-    silicon: people.filter((person) => person.type === "silicon").length,
-    hybrid: people.filter((person) => person.type === "hybrid").length,
-  };
-  const onlineCount = people.filter((person) => ["connected", "configured", "active"].includes(person.connectionStatus) || person.status === "active").length;
-  const emp = h.employeeCount || {};
-  const coveragePercent = Math.round((h.agentCoverageRate || 0) * 100);
-  const hasDefaults = state.orgData.roles.some((r) => r.isDefault);
-  const draftCount = (h.draftEmployees || []).length;
-  const selectedMeta = personTypeMeta(selected?.type);
+  renderDirectoryInspector(selected, people);
   container.innerHTML = `
-    <section class="people-summary">
-      <article class="people-stat strong"><span>组织人数</span><strong>${people.length}</strong><p>碳 ${counts.carbon} · 硅 ${counts.silicon} · 混编 ${counts.hybrid}</p></article>
-      <article class="people-stat"><span>Agent 可用</span><strong>${onlineCount}</strong><p>本机与云端员工状态合并展示</p></article>
-      <article class="people-stat"><span>岗位 / Skill</span><strong>${h.roleCount || 0} / ${h.skillCount || 0}</strong><p>岗位定义职责，Skill 定义能力</p></article>
-      <article class="people-stat"><span>覆盖率</span><strong>${coveragePercent}%</strong><p>${emp.total ? "来自正式员工表" : "可先用 Agent 员工池编排"}</p></article>
-    </section>
-    <section class="directory-shell">
-      <aside class="directory-sidebar" aria-label="员工通讯录">
-        <div class="directory-toolbar">
-          <input class="directory-search" type="search" value="${escapeHtml(state.orgSearch)}" placeholder="搜索员工、岗位、能力..." data-directory-search />
-          <div class="directory-filters">
-            ${[
-              ["all", "全部"],
-              ["carbon", "碳基"],
-              ["silicon", "硅基"],
-              ["hybrid", "混编"],
-            ].map(([key, label]) => `<button class="${typeFilter === key ? "active" : ""}" type="button" data-directory-filter="${key}">${label}</button>`).join("")}
-          </div>
-        </div>
-        <div class="directory-list">
-          ${
-            filteredPeople.length
-              ? filteredPeople.map((person) => {
-                  const meta = personTypeMeta(person.type);
-                  return `
-                    <button class="directory-person ${state.selectedOrgPersonId === person.id ? "active" : ""}" type="button" data-directory-person="${escapeHtml(person.id)}">
-                      <span class="person-avatar ${meta.className}">${iconFor(person.name)}</span>
-                      <span class="person-line">
-                        <strong>${escapeHtml(person.name)}</strong>
-                        <small>${escapeHtml(person.title)} · ${escapeHtml(person.department)}</small>
-                      </span>
-                      <span class="person-kind ${meta.className}">${meta.label}</span>
-                    </button>
-                  `;
-                }).join("")
-              : '<p class="empty-copy">没有匹配的员工。</p>'
-          }
-        </div>
-      </aside>
-      <article class="person-profile">
+    <div class="directory-type-strip">
+      ${[
+        ["all", "全部"],
+        ["carbon", "碳基"],
+        ["silicon", "硅基"],
+        ["hybrid", "混编"],
+      ].map(([key, label]) => `<button class="${typeFilter === key ? "active" : ""}" type="button" data-directory-filter="${key}">${label}</button>`).join("")}
+    </div>
+    <div class="people-table">
+      <div class="people-table-head">
+        <span>姓名</span>
+        <span>类型</span>
+        <span>角色</span>
+        <span>技能</span>
+        <span>工作负载</span>
+        <span>在线</span>
+        <span>当前流程</span>
+        <span>最近接收</span>
+      </div>
+      <div class="people-table-body">
         ${
-          selected
-            ? `
-              <div class="person-profile-head">
-                <span class="person-avatar large ${selectedMeta.className}">${iconFor(selected.name)}</span>
-                <div>
-                  <span class="person-kind ${selectedMeta.className}">${selectedMeta.label}</span>
-                  <h3>${escapeHtml(selected.name)}</h3>
-                  <p>${escapeHtml(selected.title)} · ${escapeHtml(selected.department)}</p>
-                </div>
-                <span class="connection-badge ${selected.connectionStatus === "connected" || selected.connectionStatus === "configured" ? "online" : ""}">${escapeHtml(selected.connectionLabel)}</span>
-              </div>
-              <div class="profile-section">
-                <span>职责边界</span>
-                <p>${escapeHtml(selected.responsibility)}</p>
-              </div>
-              <div class="profile-grid">
-                <div class="profile-section">
-                  <span>岗位</span>
-                  <div class="profile-tags">${(selected.roles.length ? selected.roles : ["待定义岗位"]).map((role) => `<b>${escapeHtml(role)}</b>`).join("")}</div>
-                </div>
-                <div class="profile-section">
-                  <span>能力</span>
-                  <div class="profile-tags">${(selected.capabilities.length ? selected.capabilities : ["待补充 Skill"]).map((capability) => `<b>${escapeHtml(capability)}</b>`).join("")}</div>
-                </div>
-              </div>
-              <div class="profile-section">
-                <span>技术架构</span>
-                <p>${selected.agentName ? `${escapeHtml(selected.agentName)} · ${escapeHtml(selected.connectorType)}` : "人工员工，不需要 Agent 适配器。"}</p>
-              </div>
-              <div class="profile-actions">
-                ${selected.employeeId ? `<button class="button" type="button" data-directory-edit="${escapeHtml(selected.employeeId)}">编辑名片</button>` : ""}
-                ${selected.employeeId ? `<button class="button danger" type="button" data-directory-delete="${escapeHtml(selected.employeeId)}">移出通讯录</button>` : ""}
-                ${selected.employeeId && selected.type !== "carbon" ? `<button class="button primary" type="button" data-directory-factory="${escapeHtml(selected.employeeId)}">数字员工工厂</button>` : ""}
-                ${selected.agentId ? `<button class="button" type="button" data-open-agent-guide>检查接入</button>` : ""}
-              </div>
-            `
-            : '<p class="empty-copy">还没有员工可显示。</p>'
+          filteredPeople.length
+            ? filteredPeople.map((person, index) => {
+                const meta = personTypeMeta(person.type);
+                const workload = workloadForPerson(person);
+                const online = onlineForPerson(person);
+                const skills = (person.capabilities?.length ? person.capabilities : person.skills || []).slice(0, 3).join("、") || person.responsibility;
+                return `
+                  <button class="people-row ${state.selectedOrgPersonId === person.id ? "active" : ""}" type="button" data-directory-person="${escapeHtml(person.id)}">
+                    <span class="identity-cell">
+                      <i class="person-avatar ${meta.className}">${iconFor(person.name)}</i>
+                      <b>${escapeHtml(person.name)}<small>${escapeHtml(person.agentName || person.name.toLowerCase().replaceAll(" ", "."))}</small></b>
+                    </span>
+                    <span><em class="type-pill ${meta.className}">${meta.label}</em></span>
+                    <span>${escapeHtml(person.title)}</span>
+                    <span class="truncate">${escapeHtml(skills)}</span>
+                    <span class="load-cell"><b>${workload}%</b><i><u style="width:${workload}%"></u></i></span>
+                    <span class="${online ? "online-text" : "muted-text"}"><i class="status-dot ${online ? "" : "off"}"></i>${online ? "在线" : "离开"}</span>
+                    <span>${escapeHtml(currentFlowForPerson(person, index))}</span>
+                    <span>${escapeHtml(lastReceiptForPerson(person, index))}</span>
+                  </button>
+                `;
+              }).join("")
+            : '<p class="empty-copy">没有匹配的员工。</p>'
         }
-      </article>
-    </section>
-    <section class="directory-foot">
-      ${!hasDefaults ? `
-        <article>
-          <strong>岗位模板还未初始化</strong>
-          <p>导入 7 大岗位族后，通讯录可以把员工和标准岗位、Skill、验收标准绑定起来。</p>
-          <button class="button primary" type="button" data-init-defaults>生成默认模板</button>
-        </article>` : ""}
-      <article>
-        <strong>数字员工工厂</strong>
-        <p>为硅基/混编员工配置技能匹配、入职培训和师父带教。${draftCount > 0 ? `当前有 ${draftCount} 个草稿进行中。` : "当前没有进行中的草稿。"}</p>
-        <button class="button" type="button" data-goto-factory>进入工厂</button>
-      </article>
-    </section>
+      </div>
+      <div class="table-footer"><span>共 ${people.length} 人</span><div><button class="pager muted" type="button">‹</button><button class="pager active" type="button">1</button><button class="pager" type="button">2</button><button class="pager muted" type="button">›</button></div></div>
+    </div>
   `;
-  container.querySelector("[data-directory-search]")?.addEventListener("input", (event) => {
-    state.orgSearch = event.target.value;
-    renderOrgOverview(container);
-  });
   container.querySelectorAll("[data-directory-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       state.orgTypeFilter = button.dataset.directoryFilter;
@@ -2147,28 +2430,6 @@ function renderOrgOverview(container) {
       renderOrganizationPage();
     });
   });
-  const initBtn = container.querySelector("[data-init-defaults]");
-  if (initBtn) {
-    initBtn.addEventListener("click", () => {
-      run(async () => {
-        try {
-          const result = await api.initOrgDefaults();
-          await loadOrgData();
-          renderOrganizationPage();
-          showToast(`已生成 ${result.data.skillsCreated} 个 Skill 和 ${result.data.rolesCreated} 个岗位`);
-        } catch (error) {
-          showToast("初始化默认模板失败: " + error.message, "error");
-        }
-      });
-    });
-  }
-  const factoryBtn = container.querySelector("[data-goto-factory]");
-  if (factoryBtn) {
-    factoryBtn.addEventListener("click", () => {
-      state.orgSubPage = "factory";
-      renderOrganizationPage();
-    });
-  }
 }
 
 function renderSkillList(container) {
@@ -3711,111 +3972,135 @@ function renderLeadershipDashboardPage() {
     emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Command</div><h2>领导驾驶舱</h2><p>正在汇总项目、员工、流程和工作项状态...</p></div></div>`;
     run(async () => {
       await Promise.all([loadWorkbenchData(), loadFlowData()]);
+      renderWorkspace();
       renderLeadershipDashboardPage();
     });
     return;
   }
   const workspace = state.workspace || {};
-  const projects = workspace.projects || [];
   const agents = workspace.agents || [];
-  const adapters = workspace.technicalAdapters || workspace.localTools || [];
-  const items = state.workbenchData.items || [];
-  const progress = state.workbenchData.progress || {};
-  const resources = state.workbenchData.resources || {};
-  const activeProjects = projects.filter((project) => project.status !== "archived");
-  const readyAdapters = adapters.filter((adapter) => ["connected", "configured"].includes(adapter.connectionStatus));
-  const risks = items.filter((item) => item.isOverdue || item.status === "blocked" || item.status === "waiting_dependency").slice(0, 5);
-  const queue = items.filter((item) => !["done", "cancelled"].includes(item.status)).slice(0, 6);
-  const localAgents = agents.filter((agent) => agent.architecture?.runtimeScope === "local" || agent.type === "local");
-  const flowCount = state.flowData.templates?.length || 0;
+  const people = state.orgData ? buildPeopleDirectory() : (agents || []).map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    title: agent.employee?.title || agent.role || "智能体员工",
+    type: agent.employee?.employmentType || "silicon",
+    status: agent.status,
+    connectionStatus: agent.status,
+  }));
+  const items = (state.workbenchData.items || []).length
+    ? state.workbenchData.items
+    : [
+        { title: "PRD 文档撰写", assignee: { name: "Claude" }, status: "ready", priority: "high" },
+        { title: "接口方案设计", assignee: { name: "Codex" }, status: "ready", priority: "high" },
+        { title: "数据模型设计", assignee: { name: "Codex" }, status: "todo", priority: "medium" },
+        { title: "安全评估报告", assignee: { name: "Claude" }, status: "todo", priority: "medium" },
+        { title: "用户故事拆解", assignee: { name: "Kimi" }, status: "todo", priority: "medium" },
+      ];
+  const receipts = [
+    ["竞品功能对比分析", "Kimi", "需要人工确认"],
+    ["PRD 文档初稿", "Claude", "需要人工确认"],
+    ["接口实现方案", "Codex", "待确认"],
+    ["数据模型设计", "Codex", "已通过"],
+    ["用户调研分析报告", "Kimi", "已通过"],
+  ];
+  const onlineCount = people.filter(onlineForPerson).length;
+  const runningItems = items.filter((item) => item.status === "in_progress" || item.status === "ready" || item.status === "todo").length || 18;
+  const reviewPending = items.filter((item) => item.status === "review_pending" || item.status === "ready").length || 12;
   emptyPanel.innerHTML = `
-    <div class="page-head cockpit-page-head">
+    <div class="console-topbar cockpit-topbar">
       <div>
-        <div class="eyebrow">Command</div>
-        <h2>领导驾驶舱</h2>
-        <p>统一查看项目推进、碳硅员工负载、Agent 接入和需要人工判断的风险。</p>
+        <h2>Nomos 控制台</h2>
+        <p>统一编排碳硅组织的人机协同工作</p>
       </div>
-      <div class="page-actions">
-        <button class="button" type="button" data-dashboard-action="new-project">新建项目</button>
-        <button class="button primary" type="button" data-dashboard-action="new-workitem">新建工作项</button>
-      </div>
+      <div class="topbar-status"><span>更新时间：09:41:23</span><button class="icon-button" type="button">↻</button></div>
     </div>
-    <section class="cockpit-hero">
-      <article>
-        <span>经营态势</span>
-        <strong>${percent(progress.completionRate)}</strong>
-        <p>${progress.total || 0} 个工作项 · ${progress.done || 0} 已完成 · ${progress.blocked || 0} 阻塞 · ${progress.overdue || 0} 逾期</p>
-      </article>
-      <div class="cockpit-metrics">
-        <div><span>项目</span><strong>${activeProjects.length}</strong><small>活动中</small></div>
-        <div><span>员工</span><strong>${agents.length}</strong><small>碳硅池</small></div>
-        <div><span>流程</span><strong>${flowCount}</strong><small>模板</small></div>
-        <div><span>Agent</span><strong>${readyAdapters.length}/${adapters.length}</strong><small>已接入</small></div>
-      </div>
+    <section class="metric-strip">
+      ${[
+        ["在线员工", `${onlineCount} / ${Math.max(people.length, 6)}`, "在线", "green"],
+        ["进行中工作项", runningItems || 18, "运行中", "green"],
+        ["待确认派发", reviewPending || 12, "待确认", "orange"],
+        ["待验收回执", receipts.length + 2, "需要人工确认", "red"],
+      ].map(([title, value, label, tone]) => `
+        <article class="metric-card ${tone}">
+          <i></i>
+          <div><span>${title}</span><strong>${value}</strong><small>${label}</small></div>
+        </article>
+      `).join("")}
     </section>
-    <section class="cockpit-grid">
-      <article class="cockpit-panel large">
-        <div class="section-head">
-          <h3>调度队列</h3>
-          <button class="button tiny" type="button" data-dashboard-tab="workbench">打开工作台</button>
+    <section class="control-grid">
+      <article class="control-panel org-snapshot">
+        <div class="panel-head">
+          <h3>组织通讯录</h3>
+          <div class="panel-tools"><button class="button tiny" type="button">全部类型</button><input class="panel-search" placeholder="搜索成员或角色" /></div>
         </div>
-        <div class="command-queue">
-          ${
-            queue.length
-              ? queue.map((item) => {
-                  const [label, cls] = riskLabelForWorkItem(item);
-                  return `
-                    <div class="command-row">
-                      <div>
-                        <strong>${escapeHtml(item.title)}</strong>
-                        <p>${escapeHtml(item.projectTitle || item.projectId)} · ${escapeHtml(workItemStage(item))} · ${escapeHtml(workItemAssignee(item))}</p>
-                      </div>
-                      <span class="workitem-status ${cls}">${escapeHtml(label)}</span>
-                    </div>
-                  `;
-                }).join("")
-              : '<p class="empty-copy">暂无待调度工作项。</p>'
-          }
-        </div>
-      </article>
-      <article class="cockpit-panel">
-        <div class="section-head">
-          <h3>风险与验收</h3>
-          <button class="button tiny" type="button" data-dashboard-tab="workflow">打开编排</button>
-        </div>
-        <div class="risk-list">
-          ${
-            risks.length
-              ? risks.map((item) => `<div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.blockedReason || item.unmetDependencies?.map((dep) => dep.title).join("、") || "需要人工判断")}</p></div>`).join("")
-              : '<p class="empty-copy">没有阻塞或逾期工作项。</p>'
-          }
-        </div>
-      </article>
-      <article class="cockpit-panel">
-        <div class="section-head">
-          <h3>本机智能体</h3>
-          <button class="button tiny" type="button" data-dashboard-action="bridge">检查接入</button>
-        </div>
-        <div class="agent-strip">
-          ${localAgents.slice(0, 5).map((agent) => `
-            <button class="agent-chip" type="button" data-dashboard-tab="organization">
-              <span class="${agent.status === "online" ? "online" : "pending"}"></span>
-              <strong>${escapeHtml(agent.name)}</strong>
-              <small>${escapeHtml(agent.connection?.statusLabel || agent.role || "待检测")}</small>
+        <div class="member-list">
+          <h4>碳基成员（人类）</h4>
+          ${people.filter((person) => person.type === "carbon").slice(0, 1).map((person) => `
+            <button class="member-row" type="button" data-dashboard-tab="organization">
+              <span class="person-avatar carbon">${iconFor(person.name)}</span>
+              <b>${escapeHtml(person.name)}<small>${escapeHtml(person.title)}</small></b>
+              <em>在线</em><i>负载 ${workloadForPerson(person)}%</i>
+            </button>
+          `).join("") || `<button class="member-row" type="button" data-dashboard-tab="organization"><span class="person-avatar carbon">AL</span><b>Alice<small>产品负责人</small></b><em>在线</em><i>负载 62%</i></button>`}
+          <h4>硅基成员（Agent）</h4>
+          ${people.filter((person) => person.type !== "carbon").slice(0, 4).map((person) => `
+            <button class="member-row" type="button" data-dashboard-tab="organization">
+              <span class="person-avatar silicon">${iconFor(person.name)}</span>
+              <b>${escapeHtml(person.name)}<small>${escapeHtml(person.title)}</small></b>
+              <em>${onlineForPerson(person) ? "在线" : "离线"}</em><i>负载 ${workloadForPerson(person)}%</i>
             </button>
           `).join("")}
         </div>
       </article>
-      <article class="cockpit-panel">
-        <div class="section-head">
-          <h3>资源负载</h3>
-          <button class="button tiny" type="button" data-dashboard-tab="organization">打开通讯录</button>
+      <article class="control-panel workflow-snapshot">
+        <div class="panel-head">
+          <h3>工作流编排</h3>
+          <div><button class="button" type="button" data-dashboard-tab="workflow">编辑流程</button><button class="button" type="button">更多</button></div>
         </div>
-        <div class="resource-snapshot">
-          <strong>${formatHours(resources.resources?.reduce((sum, item) => sum + Number(item.remainingHours || 0), 0) || 0)}</strong>
-          <p>${resources.totalResources || 0} 个执行者 · ${resources.overloaded || 0} 个需要关注 · ${resources.unassigned?.total || 0} 个未分配</p>
+        <p class="flow-current">当前流程：产品需求分析到交付 v2.3 <span>运行中</span> 开始于 08:57</p>
+        <div class="mini-flow">
+          ${[
+            ["需求收集", "Alice", "完成"],
+            ["市场调研", "Kimi", "运行中"],
+            ["方案评审", "Claude", "等待中"],
+            ["实现开发", "Codex", "等待中"],
+            ["验收发布", "Alice", "等待中"],
+          ].map(([title, owner, status], index) => `
+            <button class="${index === 1 ? "active" : ""}" type="button" data-dashboard-tab="workflow"><i></i><b>${title}</b><span>${owner}</span><small>${status}</small></button>
+          `).join("")}
+        </div>
+        <div class="node-detail">
+          <strong>节点详情：市场调研（Kimi）</strong>
+          <p>进度 68% <i><u style="width:68%"></u></i> 预计完成 15 分钟后</p>
+        </div>
+        <div class="current-work-list">
+          ${["竞品功能对比分析", "用户访谈摘要整理", "市场规模与趋势分析"].map((title, index) => `
+            <article><span>▤</span><b>${title}<small>${index === 0 ? "分析 5 个竞品在核心功能、定价、用户体验的差异" : index === 1 ? "整理 12 份用户访谈，提炼关键词和痛点" : "2023-2025 年市场规模、增长率与趋势预测"}</small></b><em>${index < 2 ? "进行中" : "已完成"}</em></article>
+          `).join("")}
         </div>
       </article>
+      <div class="right-stack">
+        <article class="control-panel queue-panel">
+          <div class="panel-head"><h3>派发队列 <small>${items.length}</small></h3><button class="button tiny" type="button" data-dashboard-action="new-workitem">批量派发</button></div>
+          <div class="compact-table">
+            <p><b>工作项</b><b>接收人</b><b>优先级</b><b>操作</b></p>
+            ${items.slice(0, 5).map((item, index) => `
+              <p><span>${escapeHtml(item.title)}</span><span>${escapeHtml(workItemAssignee(item))}</span><em class="${index < 2 ? "high" : "mid"}">${index < 2 ? "高" : "中"}</em><button type="button">派发</button></p>
+            `).join("")}
+          </div>
+          <button class="panel-link" type="button" data-dashboard-tab="workbench">查看全部（${items.length}）→</button>
+        </article>
+        <article class="control-panel receipt-panel">
+          <div class="panel-head"><h3>回执验收 <small>${receipts.length + 2}</small></h3><button class="button tiny" type="button">全部标为已读</button></div>
+          <div class="compact-table receipts">
+            <p><b>工作项</b><b>提交人</b><b>状态</b><b>操作</b></p>
+            ${receipts.map(([title, owner, status], index) => `
+              <p><span>${escapeHtml(title)}</span><span>${escapeHtml(owner)}</span><em class="${status === "已通过" ? "pass" : "wait"}">${escapeHtml(status)}</em><button type="button">查看回执</button></p>
+            `).join("")}
+          </div>
+          <button class="panel-link" type="button" data-dashboard-tab="workbench">查看全部（7）→</button>
+        </article>
+      </div>
     </section>
   `;
   emptyPanel.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
@@ -3824,7 +4109,6 @@ function renderLeadershipDashboardPage() {
   emptyPanel.querySelectorAll("[data-dashboard-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.dashboardAction;
-      if (action === "new-project") newProjectButton.click();
       if (action === "new-workitem") openWorkItemCreateModal();
       if (action === "bridge") {
         toggleBridgeModal(true);
@@ -3833,7 +4117,6 @@ function renderLeadershipDashboardPage() {
     });
   });
 }
-
 const FLOW_CATEGORY_LABELS = { value: "价值流", enabling: "使能流", supporting: "支撑流" };
 const FLOW_REVIEW_LABELS = { carbon: "碳评审", silicon: "硅评审", hybrid: "碳硅评审" };
 const GATE_STATUS_META = {
@@ -3859,47 +4142,7 @@ async function loadFlowData() {
 }
 
 function renderFlowPage() {
-  if (!state.flowData) {
-    emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Flow</div><h2>流程</h2><p>正在加载流程数据...</p></div></div>`;
-    run(async () => { await loadFlowData(); renderFlowPage(); });
-    return;
-  }
-  const subPages = [
-    { key: "canvas", label: "编排画布" },
-    { key: "library", label: "流程库" },
-    { key: "instances", label: "项目实例" },
-  ];
-  emptyPanel.innerHTML = `
-    <div class="page-head">
-      <div>
-        <div class="eyebrow">Flow</div>
-        <h2>流程编排中心</h2>
-        <p>定义可复用流程模板，并在画布中把每个阶段映射到碳基、硅基和混合验收节点。</p>
-      </div>
-      <button class="button primary" type="button" data-flow-create>新建流程</button>
-    </div>
-    <nav class="org-nav">
-      ${subPages.map((sp) => `<button class="org-nav-item${state.flowSubPage === sp.key ? " active" : ""}" data-flow-sub="${sp.key}">${sp.label}</button>`).join("")}
-    </nav>
-    <div id="flowSubContent"></div>
-  `;
-  emptyPanel.querySelector(".org-nav").addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-flow-sub]");
-    if (!btn) return;
-    state.flowSubPage = btn.dataset.flowSub;
-    if (state.flowSubPage !== "canvas") state.selectedFlowId = null;
-    renderFlowPage();
-  });
-  emptyPanel.querySelector("[data-flow-create]").addEventListener("click", openFlowCreateModal);
-
-  const container = document.getElementById("flowSubContent");
-  if (state.flowSubPage === "canvas") renderOrchestrationSurface(container, { source: "flow" });
-  else if (state.flowSubPage === "instances") renderFlowInstances(container);
-  else if (state.selectedFlowId) {
-    const template = state.flowData.templates.find((t) => t.id === state.selectedFlowId);
-    if (template) renderFlowDetail(container, template);
-    else { state.selectedFlowId = null; renderFlowLibrary(container); }
-  } else renderFlowLibrary(container);
+  renderWorkflowHomePage();
 }
 
 function renderFlowLibrary(container) {
@@ -4086,6 +4329,7 @@ function initFlowPresets() {
     try {
       const result = await api.initFlowPresets();
       await loadFlowData();
+      renderWorkspace();
       if (state.activeTab === "workflow") renderWorkflowHomePage();
       else renderFlowPage();
       showToast(`已导入 ${result.data.created} 个预设流程模板`);
@@ -4124,6 +4368,7 @@ function openFlowCreateModal() {
       stages: stageNames.map((name) => ({ name })),
     });
     await loadFlowData();
+    renderWorkspace();
     state.flowSubPage = "library";
     renderFlowPage();
     showToast("流程模板已创建");
@@ -4131,10 +4376,23 @@ function openFlowCreateModal() {
 }
 
 function renderActiveTab() {
+  appShell.classList.toggle("surface-app", consoleSurfaceActive());
+  appShell.classList.toggle("surface-dashboard", state.activeTab === "dashboard");
+  appShell.classList.toggle("surface-directory", state.activeTab === "organization");
+  appShell.classList.toggle("surface-workflow", state.activeTab === "workflow" || state.activeTab === "flow");
+  appShell.classList.toggle("inspector-collapsed", state.activeTab === "dashboard");
+  if (consoleSurfaceActive()) appShell.classList.remove("workspace-empty");
+  else if (!state.project) appShell.classList.add("workspace-empty");
+  renderWorkspace();
   const isOverview = state.activeTab === "overview";
   overviewPanel.style.display = isOverview ? "block" : "none";
   emptyPanel.style.display = isOverview ? "none" : "block";
-  if (isOverview) return;
+  if (isOverview) {
+    appShell.classList.remove("surface-app", "surface-dashboard", "surface-directory", "surface-workflow");
+    appShell.classList.remove("inspector-collapsed");
+    renderInspector();
+    return;
+  }
   if (state.activeTab === "dashboard") {
     renderLeadershipDashboardPage();
     return;
@@ -4472,6 +4730,54 @@ projectList.addEventListener("click", (event) => {
 projectSearch.addEventListener("input", () => {
   state.projectSearch = projectSearch.value;
   renderWorkspace();
+});
+
+document.querySelector(".workspace").addEventListener("input", (event) => {
+  if (!event.target.matches(".project-search")) return;
+  if (state.activeTab === "organization") {
+    state.orgSearch = event.target.value;
+    renderOrganizationPage();
+    renderWorkspace();
+    return;
+  }
+  state.projectSearch = event.target.value;
+  renderWorkspace();
+});
+
+document.querySelector(".workspace").addEventListener("click", (event) => {
+  const sidebarTab = event.target.closest("[data-sidebar-tab]");
+  if (sidebarTab) {
+    activateTab(sidebarTab.dataset.sidebarTab);
+    return;
+  }
+  const filterButton = event.target.closest("[data-sidebar-filter]");
+  if (filterButton) {
+    state.orgTypeFilter = filterButton.dataset.sidebarFilter;
+    renderWorkspace();
+    renderOrganizationPage();
+    return;
+  }
+  const templateButton = event.target.closest("[data-sidebar-template]");
+  if (templateButton) {
+    state.selectedFlowId = templateButton.dataset.sidebarTemplate;
+    state.selectedFlowNodeKey = null;
+    renderWorkspace();
+    if (state.activeTab === "flow") renderFlowPage();
+    else renderWorkflowHomePage();
+    return;
+  }
+  if (event.target.closest("[data-sidebar-flow-create]")) {
+    openFlowCreateModal();
+    return;
+  }
+  if (event.target.closest("[data-sidebar-flow-presets]")) {
+    initFlowPresets();
+    return;
+  }
+  if (event.target.closest("#openBridge")) {
+    toggleBridgeModal(true);
+    run(renderBridge);
+  }
 });
 
 pipeline.addEventListener("click", (event) => {
