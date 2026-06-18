@@ -337,7 +337,7 @@ const state = {
   project: null,
   selectedStageId: null,
   executions: [],
-  activeTab: "overview",
+  activeTab: "dashboard",
   audit: [],
   agentRoute: null,
   backups: [],
@@ -345,14 +345,18 @@ const state = {
   digitalEmployeeStep: 0,
   orgData: null,
   orgSubPage: "overview",
+  orgSearch: "",
+  orgTypeFilter: "all",
+  selectedOrgPersonId: null,
   editingSkill: null,
   editingRole: null,
   editingEmployee: null,
   factoryEmployeeId: null,
   factoryStep: 0,
   flowData: null,
-  flowSubPage: "library",
+  flowSubPage: "canvas",
   selectedFlowId: null,
+  selectedFlowNodeKey: null,
   workbenchData: null,
   workbenchSubPage: "items",
 };
@@ -379,9 +383,10 @@ const appShell = document.querySelector(".app-shell");
 const projectSearch = document.querySelector(".project-search");
 let actionModalResolve = null;
 
-const designThemeNames = new Set(["slate", "golden", "garden", "nocturne", "bluepond", "dream", "rose", "custom"]);
-const designThemeVersion = "appearance-palette-v1";
+const designThemeNames = new Set(["apple", "slate", "golden", "garden", "nocturne", "bluepond", "dream", "rose", "custom"]);
+const designThemeVersion = "appearance-palette-v2";
 const designThemes = [
+  { id: "apple", name: "银白", swatch: "#f5f5f7", copy: "Apple 式玻璃质感，干净、安静、聚焦" },
   { id: "slate", name: "清雾", swatch: "#2f2f2f", copy: "半透明灰，透过薄雾看世界" },
   { id: "golden", name: "金阁", swatch: "#a78a4c", copy: "香槟轻奢，仙境的黄金下午" },
   { id: "garden", name: "青园", swatch: "#51916b", copy: "青绿护眼，秘密花园" },
@@ -393,7 +398,7 @@ const designThemes = [
 ];
 
 function applyDesignTheme(themeName) {
-  const nextTheme = designThemeNames.has(themeName) ? themeName : "slate";
+  const nextTheme = designThemeNames.has(themeName) ? themeName : "apple";
   document.body.dataset.designTheme = nextTheme;
   localStorage.setItem("nomos.designTheme", nextTheme);
   document.querySelectorAll("[data-appearance-theme]").forEach((button) => {
@@ -403,9 +408,9 @@ function applyDesignTheme(themeName) {
 
 if (localStorage.getItem("nomos.designThemeVersion") !== designThemeVersion) {
   localStorage.setItem("nomos.designThemeVersion", designThemeVersion);
-  applyDesignTheme("slate");
+  applyDesignTheme("apple");
 } else {
-  applyDesignTheme(localStorage.getItem("nomos.designTheme") || document.body.dataset.designTheme || "slate");
+  applyDesignTheme(localStorage.getItem("nomos.designTheme") || document.body.dataset.designTheme || "apple");
 }
 
 function ensureExecutionPanel() {
@@ -601,7 +606,7 @@ function agentRole(agent) {
   const scope = architecture.runtimeScope === "local" ? "\u672c\u673a" : architecture.runtimeScope === "cloud" ? "\u4e91\u7aef" : "\u67b6\u6784";
   const provider = architecture.provider || adapter.provider || agent.type;
   const status = agent.connection?.statusLabel || adapter.statusLabel || (agent.status === "online" ? "\u53ef\u7528" : "\u5f85\u63a5\u5165");
-  return `${title} ? ${scope}/${provider} ? ${status}`;
+  return `${title} · ${scope}/${provider} · ${status}`;
 }
 
 function employeeTypeLabel(agent) {
@@ -651,7 +656,7 @@ function renderWorkspace() {
           <span class="project-avatar ${agent.architecture?.runtimeScope === "local" ? "blue" : ""}">${iconFor(agent.alias || agent.name)}</span>
           <span>
             <span class="project-title">${escapeHtml(agent.name)}</span>
-            <span class="project-copy">${escapeHtml(employeeTypeLabel(agent))}\u5458\u5de5 ? ${escapeHtml(agentRole(agent))}</span>
+            <span class="project-copy">${escapeHtml(employeeTypeLabel(agent))}\u5458\u5de5 · ${escapeHtml(agentRole(agent))}</span>
           </span>
           <span class="${agent.status === "online" ? "online" : "pending"}"></span>
         </article>
@@ -1126,7 +1131,7 @@ function renderInspector() {
           <span class="connection-icon ${agent.id === "claude-code" ? "blue" : ""}">${iconFor(agent.name.replaceAll(" ", ""))}</span>
           <span class="connection-copy">
             <span class="connection-name">${escapeHtml(agent.name)}</span>
-            <span class="connection-desc">${escapeHtml(employeeTypeLabel(agent))}\u5458\u5de5 ? ${escapeHtml(agentRole(agent))}</span>
+            <span class="connection-desc">${escapeHtml(employeeTypeLabel(agent))}\u5458\u5de5 · ${escapeHtml(agentRole(agent))}</span>
           </span>
           <span class="${agent.status === "online" ? "online" : "pending"}"></span>
         </div>
@@ -1520,66 +1525,216 @@ function renderMessagesPage() {
   `;
 }
 
-function renderWorkflowHomePage() {
-  const project = state.project;
+function flowTemplatesForOrchestration() {
+  return state.flowData?.templates || [];
+}
+
+function selectedOrchestrationTemplate() {
+  const templates = flowTemplatesForOrchestration();
+  return templates.find((template) => template.id === state.selectedFlowId) || templates[0] || null;
+}
+
+function laneKeyForStage(stage, index) {
+  const reviewMode = stage.gate?.reviewMode || stage.reviewMode;
+  if (["carbon", "silicon", "hybrid"].includes(reviewMode)) return reviewMode;
+  const key = `${stage.key || ""} ${stage.name || ""} ${stage.title || ""}`.toLowerCase();
+  if (/develop|code|研发|开发|执行|实现/.test(key)) return "silicon";
+  if (/test|deploy|review|验收|测试|发布|复核/.test(key)) return "hybrid";
+  return index % 3 === 1 ? "silicon" : index % 3 === 2 ? "hybrid" : "carbon";
+}
+
+function orchestrationNodesFromTemplate(template, project = state.project) {
+  if (template?.stages?.length) {
+    return template.stages.map((stage, index) => ({
+      id: stage.id,
+      title: stage.name,
+      description: stage.description || stage.gate?.exitCriteria || "定义输入、输出、责任岗位和验收口径。",
+      lane: laneKeyForStage(stage, index),
+      order: index,
+      status: "template",
+      owner: (stage.gate?.requiredRoles || []).join("、") || FLOW_REVIEW_LABELS[stage.gate?.reviewMode] || "流程负责人",
+      inputs: stage.inputMaterials || [],
+      outputs: stage.expectedOutputs || [],
+      templateStage: stage,
+    }));
+  }
   const stages = project?.stages || [];
-  const tasks = project?.workflowTasks || [];
-  const receipts = project?.taskReceipts || [];
-  const flowLanes = [
-    { title: "价值流", copy: "直接创造客户价值，如 MTL、LTC、IPD、ITR。", nodes: ["MTL", "LTC", "IPD", "ITR"] },
-    { title: "使能流", copy: "提升价值流效率，如战略到执行、知识治理、平台能力供给。", nodes: ["DSTE", "知识治理", "平台供给"] },
-    { title: "支撑流", copy: "保障组织运行，如人力、财务、法务、IT、安全。", nodes: ["HR", "财务", "法务", "IT"] },
+  return stages.map((stage, index) => ({
+    id: stage.id,
+    title: stage.title,
+    description: stage.description,
+    lane: laneKeyForStage(stage, index),
+    order: index,
+    status: stage.status,
+    owner: stage.ownerName,
+    inputs: [],
+    outputs: stage.deliverableIds || [],
+    projectStage: stage,
+  }));
+}
+
+function renderOrchestrationSurface(container, options = {}) {
+  const templates = flowTemplatesForOrchestration();
+  const template = selectedOrchestrationTemplate();
+  const nodes = orchestrationNodesFromTemplate(template);
+  const selectedNode =
+    nodes.find((node) => node.id === state.selectedFlowNodeKey) ||
+    nodes[0] ||
+    null;
+  if (selectedNode) state.selectedFlowNodeKey = selectedNode.id;
+  const lanes = [
+    { key: "carbon", title: "碳基决策", desc: "目标、授权、验收与风险判断" },
+    { key: "silicon", title: "硅基执行", desc: "资料研读、代码、分析和自动化产出" },
+    { key: "hybrid", title: "混合验收", desc: "人机协同复核、发布与回流" },
   ];
+  const agents = state.workspace?.agents || [];
+  const localAgents = agents.filter((agent) => agent.architecture?.runtimeScope === "local").slice(0, 5);
+  const recommended =
+    selectedNode?.lane === "silicon"
+      ? localAgents.find((agent) => agent.id === "codex-cli") || localAgents[0]
+      : selectedNode?.lane === "hybrid"
+        ? localAgents.find((agent) => agent.id === "claude-code") || localAgents[0]
+        : agents.find((agent) => agent.id === "alice") || agents[0];
+  container.innerHTML = `
+    <section class="orchestration-shell">
+      <aside class="orchestration-library">
+        <div class="library-head">
+          <span>流程模板</span>
+          <strong>${templates.length || 0}</strong>
+        </div>
+        <div class="template-list">
+          ${
+            templates.length
+              ? templates.map((item) => `
+                  <button class="template-row ${template?.id === item.id ? "active" : ""}" type="button" data-orchestration-template="${escapeHtml(item.id)}">
+                    <strong>${escapeHtml(item.name)}</strong>
+                    <small>${FLOW_CATEGORY_LABELS[item.category] || item.category} · ${item.stageCount ?? item.stages.length} 阶段</small>
+                  </button>
+                `).join("")
+              : '<p class="empty-copy">流程库为空，可以先导入预设模板。</p>'
+          }
+        </div>
+        <button class="button ${templates.length ? "" : "primary"}" type="button" data-orchestration-presets>${templates.length ? "补充预设" : "导入 LTC/IPD/ITR"}</button>
+      </aside>
+      <div class="orchestration-canvas">
+        <div class="canvas-head">
+          <div>
+            <span class="eyebrow">Workflow Atelier</span>
+            <h3>${escapeHtml(template?.name || state.project?.title || "自由编排")}</h3>
+            <p>${escapeHtml(template?.description || "把流程拆成可调度节点，再映射到碳基员工、硅基员工和验收关口。")}</p>
+          </div>
+          <div class="canvas-actions">
+            ${state.project && template ? `<button class="button" type="button" data-orchestration-bind="${escapeHtml(template.id)}">绑定当前项目</button>` : ""}
+            <button class="button primary" type="button" data-orchestration-workitem>新建工作项</button>
+          </div>
+        </div>
+        <div class="swimlane-board">
+          ${lanes.map((lane) => {
+            const laneNodes = nodes.filter((node) => node.lane === lane.key);
+            return `
+              <section class="swimlane ${lane.key}">
+                <div class="swimlane-title">
+                  <strong>${lane.title}</strong>
+                  <span>${lane.desc}</span>
+                </div>
+                <div class="swimlane-nodes">
+                  ${
+                    laneNodes.length
+                      ? laneNodes.map((node) => {
+                          const [label, statusClass] = node.status === "template" ? ["模板", ""] : (stageStatus[node.status] || ["等待", ""]);
+                          return `
+                            <button class="flow-node ${state.selectedFlowNodeKey === node.id ? "active" : ""}" type="button" data-orchestration-node="${escapeHtml(node.id)}">
+                              <span>${String(node.order + 1).padStart(2, "0")}</span>
+                              <strong>${escapeHtml(node.title)}</strong>
+                              <small>${escapeHtml(node.owner || "未指定负责人")}</small>
+                              <b class="chip ${statusClass}">${escapeHtml(label)}</b>
+                            </button>
+                          `;
+                        }).join("")
+                      : '<p class="empty-copy">暂无节点</p>'
+                  }
+                </div>
+              </section>
+            `;
+          }).join("")}
+        </div>
+      </div>
+      <aside class="orchestration-inspector">
+        <span class="eyebrow">Node Inspector</span>
+        ${
+          selectedNode
+            ? `
+              <h3>${escapeHtml(selectedNode.title)}</h3>
+              <p>${escapeHtml(selectedNode.description || "等待补充节点说明。")}</p>
+              <div class="profile-section">
+                <span>推荐执行者</span>
+                <p>${recommended ? `${escapeHtml(recommended.name)} · ${escapeHtml(recommended.connection?.statusLabel || recommended.role || "可调度")}` : "等待接入 Agent"}</p>
+              </div>
+              <div class="profile-section">
+                <span>输入</span>
+                <div class="profile-tags">${(selectedNode.inputs.length ? selectedNode.inputs : ["目标", "上下文"]).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}</div>
+              </div>
+              <div class="profile-section">
+                <span>输出</span>
+                <div class="profile-tags">${(selectedNode.outputs.length ? selectedNode.outputs : ["结构化回执", "验收证据"]).map((item) => `<b>${escapeHtml(item)}</b>`).join("")}</div>
+              </div>
+            `
+            : '<p class="empty-copy">选择一个流程节点查看详情。</p>'
+        }
+      </aside>
+    </section>
+  `;
+  container.querySelectorAll("[data-orchestration-template]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedFlowId = button.dataset.orchestrationTemplate;
+      state.selectedFlowNodeKey = null;
+      renderOrchestrationSurface(container, options);
+    });
+  });
+  container.querySelectorAll("[data-orchestration-node]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedFlowNodeKey = button.dataset.orchestrationNode;
+      renderOrchestrationSurface(container, options);
+    });
+  });
+  container.querySelector("[data-orchestration-presets]")?.addEventListener("click", initFlowPresets);
+  container.querySelector("[data-orchestration-bind]")?.addEventListener("click", (event) => {
+    run(async () => {
+      if (!state.project) return;
+      await api.bindProjectFlow(state.project.id, event.target.dataset.orchestrationBind);
+      await loadFlowData();
+      await loadWorkspace(state.project.id);
+      showToast("流程已绑定当前项目");
+    });
+  });
+  container.querySelector("[data-orchestration-workitem]")?.addEventListener("click", openWorkItemCreateModal);
+}
+
+function renderWorkflowHomePage() {
+  if (!state.flowData) {
+    emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Workflow</div><h2>工作流编排</h2><p>正在加载流程模板和项目实例...</p></div></div>`;
+    run(async () => { await loadFlowData(); renderWorkflowHomePage(); });
+    return;
+  }
   emptyPanel.innerHTML = `
     <div class="page-head">
       <div>
         <div class="eyebrow">Workflow</div>
-        <h2>工作流</h2>
-        <p>项目不是孤立任务，而是流程模板、岗位责任、输入输出和验收关口的一次运行实例。</p>
+        <h2>工作流编排</h2>
+        <p>以流程画布为中心，把碳基决策、硅基执行和混合验收编排成可派发的工作项。</p>
       </div>
-      <span class="date-chip">${stages.length || 0} 个关口</span>
+      <div class="page-actions">
+        <button class="button" type="button" data-jump-tab="organization">查看员工</button>
+        <button class="button primary" type="button" data-jump-tab="workbench">进入工作台</button>
+      </div>
     </div>
-    <section class="ia-panel">
-      ${flowLanes
-        .map(
-          (lane) => `
-            <article class="ia-card">
-              <span>${lane.title}</span>
-              <strong>${escapeHtml(lane.nodes.join(" / "))}</strong>
-              <p>${lane.copy}</p>
-            </article>
-          `,
-        )
-        .join("")}
-    </section>
-    <section class="page-section">
-      <div class="section-head"><h3>当前流程实例</h3><span class="section-hint">${project ? escapeHtml(project.title) : "暂无项目"}</span></div>
-      <div class="workflow-map-list">
-        ${
-          stages.length
-            ? stages
-                .map((stage, index) => {
-                  const [statusLabel, statusClass] = stageStatus[stage.status] || ["等待中", ""];
-                  const task = tasks.find((item) => item.id === stage.activeTaskId || item.stageKey === stage.key);
-                  const receipt = receipts.find((item) => item.stageKey === stage.key);
-                  return `
-                    <article class="workflow-map-row">
-                      <span class="stage-index">${String(index + 1).padStart(2, "0")}</span>
-                      <div class="manage-copy">
-                        <strong>${escapeHtml(stage.title)}</strong>
-                        <p>${escapeHtml(receipt?.summary || stage.description)}</p>
-                        <small>${task ? `任务 ${escapeHtml(task.id.slice(0, 8))} · ${escapeHtml(task.status)}` : "等待责任员工提交结构化回执"}</small>
-                      </div>
-                      <span class="chip ${statusClass}">${escapeHtml(statusLabel)}</span>
-                    </article>
-                  `;
-                })
-                .join("")
-            : '<p class="empty-copy">创建项目后，Nomos 会在这里显示流程关口、责任岗位、任务回执和验收状态。</p>'
-        }
-      </div>
-    </section>
+    <div id="workflowOrchestration"></div>
   `;
+  const container = document.getElementById("workflowOrchestration");
+  renderOrchestrationSurface(container, { source: "workflow" });
+  emptyPanel.querySelectorAll("[data-jump-tab]").forEach((button) => {
+    button.addEventListener("click", () => activateTab(button.dataset.jumpTab));
+  });
 }
 
 async function loadOrgData() {
@@ -1610,6 +1765,188 @@ const ORG_TYPE_LABELS = { carbon: "碳基", silicon: "硅基", hybrid: "混编" 
 const ORG_STATUS_LABELS = { active: "在职", vacation: "休假", inactive: "离职" };
 const ORG_FAMILY_LIST = ["经营与战略", "市场与增长", "销售与客户", "产品与研发", "交付与运营", "职能支撑", "AI 与平台"];
 
+function roleNamesForIds(roleIds = []) {
+  const roles = state.orgData?.roles || [];
+  return (roleIds || []).map((roleId) => roles.find((role) => role.id === roleId)?.name).filter(Boolean);
+}
+
+function skillsForRoleIds(roleIds = []) {
+  const roles = state.orgData?.roles || [];
+  const skills = state.orgData?.skills || [];
+  const skillIds = new Set();
+  for (const roleId of roleIds || []) {
+    const role = roles.find((item) => item.id === roleId);
+    for (const skillId of role?.skillIds || []) skillIds.add(skillId);
+  }
+  return [...skillIds].map((skillId) => skills.find((skill) => skill.id === skillId)?.name).filter(Boolean);
+}
+
+function personTypeMeta(type) {
+  if (type === "carbon") return { label: "碳基", className: "carbon" };
+  if (type === "hybrid") return { label: "混编", className: "hybrid" };
+  return { label: "硅基", className: "silicon" };
+}
+
+function buildPeopleDirectory() {
+  const employees = (state.orgData?.employees || []).filter((employee) => employee.status !== "inactive");
+  const agents = state.workspace?.agents || [];
+  const adapters = state.orgData?.adapters || state.workspace?.technicalAdapters || [];
+  const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+  const adapterById = new Map(adapters.map((adapter) => [adapter.id, adapter]));
+  const usedAgentIds = new Set();
+  const people = [];
+
+  for (const employee of employees) {
+    const agent = employee.agentId ? agentById.get(employee.agentId) : null;
+    if (employee.agentId) usedAgentIds.add(employee.agentId);
+    const roleNames = roleNamesForIds(employee.roleIds);
+    const skills = skillsForRoleIds(employee.roleIds);
+    const adapter = agent ? adapterById.get(agent.architecture?.adapterId || agent.id) : null;
+    people.push({
+      id: `employee:${employee.id}`,
+      employeeId: employee.id,
+      agentId: employee.agentId || null,
+      source: "employee",
+      name: employee.name,
+      type: employee.type || agent?.employee?.employmentType || "carbon",
+      title: roleNames[0] || agent?.employee?.title || (employee.type === "carbon" ? "碳基员工" : "硅基员工"),
+      department: agent?.employee?.department || "组织通讯录",
+      status: employee.status || "active",
+      statusLabel: ORG_STATUS_LABELS[employee.status] || employee.status || "在职",
+      roles: roleNames,
+      skills,
+      responsibility: agent?.employee?.responsibility || roleNames.join("、") || "等待补充职责边界",
+      agentName: agent?.name || "",
+      connectionStatus: agent?.connection?.connectionStatus || adapter?.connectionStatus || (agent ? agent.status : "manual"),
+      connectionLabel: agent?.connection?.statusLabel || adapter?.statusLabel || (agent ? (agent.status === "online" ? "已接入" : "待接入") : "人工处理"),
+      connectorType: agent?.connection?.connectorType || adapter?.connectorType || "Human",
+      capabilities: [...new Set([...(agent?.capabilities || []), ...skills])].slice(0, 8),
+      draftStatus: employee.digitalEmployeeDraft?.status || null,
+    });
+  }
+
+  for (const agent of agents) {
+    if (usedAgentIds.has(agent.id)) continue;
+    const type = agent.employee?.employmentType || (agent.type === "human" ? "carbon" : "silicon");
+    const adapter = adapterById.get(agent.architecture?.adapterId || agent.id);
+    people.push({
+      id: `agent:${agent.id}`,
+      agentId: agent.id,
+      source: "agent",
+      name: agent.name,
+      type,
+      title: agent.employee?.title || agent.role || "智能体员工",
+      department: agent.employee?.department || (agent.architecture?.runtimeScope === "local" ? "本机智能体" : "云端智能体"),
+      status: agent.status === "online" ? "active" : "pending",
+      statusLabel: agent.status === "online" ? "可调度" : "待接入",
+      roles: agent.role ? [agent.role] : [],
+      skills: agent.employee?.skills || [],
+      responsibility: agent.employee?.responsibility || agent.role || "等待补充职责边界",
+      agentName: agent.name,
+      connectionStatus: agent.connection?.connectionStatus || adapter?.connectionStatus || agent.status,
+      connectionLabel: agent.connection?.statusLabel || adapter?.statusLabel || (agent.status === "online" ? "已接入" : "待接入"),
+      connectorType: agent.connection?.connectorType || adapter?.connectorType || agent.architecture?.provider || "Agent",
+      capabilities: [...new Set([...(agent.capabilities || []), ...(agent.employee?.skills || [])])].slice(0, 8),
+    });
+  }
+
+  if (!people.some((person) => person.type === "carbon")) {
+    people.unshift({
+      id: "synthetic:owner",
+      source: "synthetic",
+      name: "本机负责人",
+      type: "carbon",
+      title: "Owner / 最终验收人",
+      department: "经营层",
+      status: "active",
+      statusLabel: "在位",
+      roles: ["目标确认", "权限授权", "最终验收"],
+      skills: ["优先级判断", "风险确认"],
+      responsibility: "为硅基员工授权目录、确认关键决策，并对最终交付负责。",
+      agentName: "",
+      connectionStatus: "manual",
+      connectionLabel: "人工决策",
+      connectorType: "Human",
+      capabilities: ["approval", "governance", "risk-control"],
+    });
+  }
+
+  const order = { carbon: 0, hybrid: 1, silicon: 2 };
+  return people.sort((left, right) => (order[left.type] ?? 9) - (order[right.type] ?? 9) || left.name.localeCompare(right.name, "zh-CN"));
+}
+
+async function openEmployeeCreateModal(defaultType = "carbon") {
+  const agents = state.workspace?.agents || [];
+  const roles = state.orgData?.roles || [];
+  const values = await openActionModal({
+    title: defaultType === "carbon" ? "新建碳基员工" : "新建硅基员工",
+    fields: [
+      { name: "name", label: "姓名", required: true, placeholder: defaultType === "carbon" ? "例如：张三" : "例如：Kimi 研究员" },
+      { name: "type", label: "类型", value: defaultType, type: "select", options: [
+        { value: "carbon", label: "碳基" },
+        { value: "silicon", label: "硅基" },
+        { value: "hybrid", label: "混编" },
+      ]},
+      { name: "agentId", label: "关联 Agent", value: "", type: "select", required: false, options: [
+        { value: "", label: "无" },
+        ...agents.map((agent) => ({ value: agent.id, label: `${agent.name} / ${agent.architecture?.provider || agent.type}` })),
+      ]},
+      { name: "roleIds", label: "关联岗位", type: "checkbox", value: [], options: roles.map((role) => ({ value: role.id, label: role.name })) },
+    ],
+    confirmLabel: "创建员工",
+  });
+  if (!values) return;
+  const roleIds = Array.isArray(values.roleIds) ? values.roleIds : [];
+  await api.createEmployee({
+    name: values.name,
+    type: values.type || defaultType,
+    agentId: values.agentId || undefined,
+    roleIds,
+  });
+  await loadOrgData();
+  renderOrganizationPage();
+  showToast("员工已创建");
+}
+
+async function openEmployeeEditModal(employeeId) {
+  const employee = state.orgData?.employees?.find((item) => item.id === employeeId);
+  if (!employee) return;
+  const roles = state.orgData?.roles || [];
+  const values = await openActionModal({
+    title: "编辑员工",
+    fields: [
+      { name: "name", label: "姓名", value: employee.name, required: true },
+      { name: "status", label: "状态", value: employee.status || "active", type: "select", options: [
+        { value: "active", label: "在职" },
+        { value: "vacation", label: "休假" },
+        { value: "inactive", label: "离职" },
+      ]},
+      { name: "roleIds", label: "关联岗位", type: "checkbox", value: employee.roleIds || [], options: roles.map((role) => ({ value: role.id, label: role.name })) },
+    ],
+    confirmLabel: "保存",
+  });
+  if (!values) return;
+  await api.updateEmployee(employeeId, {
+    name: values.name,
+    status: values.status,
+    roleIds: Array.isArray(values.roleIds) ? values.roleIds : [],
+  });
+  await loadOrgData();
+  renderOrganizationPage();
+  showToast("员工已更新");
+}
+
+async function archiveEmployee(employeeId) {
+  const employee = state.orgData?.employees?.find((item) => item.id === employeeId);
+  if (!employee) return;
+  if (!(await askConfirm(`确认将「${employee.name}」标记为离职吗？`, { title: "移除员工", danger: true, confirmLabel: "标记离职" }))) return;
+  await api.deleteEmployee(employeeId);
+  state.selectedOrgPersonId = null;
+  await loadOrgData();
+  renderOrganizationPage();
+  showToast("员工已移出通讯录");
+}
+
 function renderOrganizationPage() {
   if (!state.orgData) {
     emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Organization</div><h2>组织</h2><p>正在加载组织数据...</p></div></div>`;
@@ -1617,18 +1954,22 @@ function renderOrganizationPage() {
     return;
   }
   const subPages = [
-    { key: "overview", label: "概览" },
-    { key: "skills", label: "Skill 池" },
+    { key: "overview", label: "通讯录" },
     { key: "roles", label: "岗位" },
-    { key: "employees", label: "员工" },
+    { key: "skills", label: "Skill 池" },
+    { key: "employees", label: "员工表" },
     { key: "factory", label: "数字员工工厂" },
   ];
   emptyPanel.innerHTML = `
     <div class="page-head">
       <div>
         <div class="eyebrow">Organization</div>
-        <h2>组织</h2>
-        <p>管理 Skill、岗位、员工和数字员工，构建碳硅混编团队。</p>
+        <h2>碳硅员工通讯录</h2>
+        <p>像通讯录一样管理碳基员工、硅基 Agent 和混编岗位，Nomos 按职责、能力和接入状态调度任务。</p>
+      </div>
+      <div class="page-actions">
+        <button class="button" type="button" data-create-carbon>新建碳基</button>
+        <button class="button primary" type="button" data-create-silicon>新建硅基</button>
       </div>
     </div>
     <nav class="org-nav">
@@ -1642,6 +1983,8 @@ function renderOrganizationPage() {
     state.orgSubPage = btn.dataset.orgSub;
     renderOrganizationPage();
   });
+  emptyPanel.querySelector("[data-create-carbon]")?.addEventListener("click", () => run(() => openEmployeeCreateModal("carbon")));
+  emptyPanel.querySelector("[data-create-silicon]")?.addEventListener("click", () => run(() => openEmployeeCreateModal("silicon")));
   const container = document.getElementById("orgSubContent");
   if (state.orgSubPage === "overview") renderOrgOverview(container);
   else if (state.orgSubPage === "skills") renderSkillList(container);
@@ -1652,71 +1995,158 @@ function renderOrganizationPage() {
 
 function renderOrgOverview(container) {
   const h = state.orgData.health || {};
+  const people = buildPeopleDirectory();
+  const query = state.orgSearch.trim().toLowerCase();
+  const typeFilter = state.orgTypeFilter || "all";
+  const filteredPeople = people.filter((person) => {
+    const matchesType = typeFilter === "all" || person.type === typeFilter;
+    const haystack = [person.name, person.title, person.department, person.agentName, ...(person.roles || []), ...(person.capabilities || [])]
+      .join(" ")
+      .toLowerCase();
+    return matchesType && (!query || haystack.includes(query));
+  });
+  const selected =
+    filteredPeople.find((person) => person.id === state.selectedOrgPersonId) ||
+    filteredPeople[0] ||
+    people[0];
+  if (selected) state.selectedOrgPersonId = selected.id;
+  const counts = {
+    carbon: people.filter((person) => person.type === "carbon").length,
+    silicon: people.filter((person) => person.type === "silicon").length,
+    hybrid: people.filter((person) => person.type === "hybrid").length,
+  };
+  const onlineCount = people.filter((person) => ["connected", "configured", "active"].includes(person.connectionStatus) || person.status === "active").length;
   const emp = h.employeeCount || {};
   const coveragePercent = Math.round((h.agentCoverageRate || 0) * 100);
   const hasDefaults = state.orgData.roles.some((r) => r.isDefault);
   const draftCount = (h.draftEmployees || []).length;
+  const selectedMeta = personTypeMeta(selected?.type);
   container.innerHTML = `
-    <section class="ia-panel">
-      <article class="ia-card accent">
-        <span>Skill 池</span>
-        <strong>${h.skillCount || 0} 项能力</strong>
-        <p>技能是岗位的基本构成单元。</p>
-      </article>
-      <article class="ia-card">
-        <span>岗位</span>
-        <strong>${h.roleCount || 0} 个岗位</strong>
-        <p>岗位定义职责、权限和验收标准。</p>
-      </article>
-      <article class="ia-card">
-        <span>员工</span>
-        <strong>碳 ${emp.carbon || 0} · 硅 ${emp.silicon || 0} · 混编 ${emp.hybrid || 0}</strong>
-        <p>总计 ${emp.total || 0} 名员工。</p>
-      </article>
-      <article class="ia-card">
-        <span>Agent 覆盖率</span>
-        <strong>${coveragePercent}%</strong>
-        <p>硅基员工中有 Agent 关联的比例。</p>
+    <section class="people-summary">
+      <article class="people-stat strong"><span>组织人数</span><strong>${people.length}</strong><p>碳 ${counts.carbon} · 硅 ${counts.silicon} · 混编 ${counts.hybrid}</p></article>
+      <article class="people-stat"><span>Agent 可用</span><strong>${onlineCount}</strong><p>本机与云端员工状态合并展示</p></article>
+      <article class="people-stat"><span>岗位 / Skill</span><strong>${h.roleCount || 0} / ${h.skillCount || 0}</strong><p>岗位定义职责，Skill 定义能力</p></article>
+      <article class="people-stat"><span>覆盖率</span><strong>${coveragePercent}%</strong><p>${emp.total ? "来自正式员工表" : "可先用 Agent 员工池编排"}</p></article>
+    </section>
+    <section class="directory-shell">
+      <aside class="directory-sidebar" aria-label="员工通讯录">
+        <div class="directory-toolbar">
+          <input class="directory-search" type="search" value="${escapeHtml(state.orgSearch)}" placeholder="搜索员工、岗位、能力..." data-directory-search />
+          <div class="directory-filters">
+            ${[
+              ["all", "全部"],
+              ["carbon", "碳基"],
+              ["silicon", "硅基"],
+              ["hybrid", "混编"],
+            ].map(([key, label]) => `<button class="${typeFilter === key ? "active" : ""}" type="button" data-directory-filter="${key}">${label}</button>`).join("")}
+          </div>
+        </div>
+        <div class="directory-list">
+          ${
+            filteredPeople.length
+              ? filteredPeople.map((person) => {
+                  const meta = personTypeMeta(person.type);
+                  return `
+                    <button class="directory-person ${state.selectedOrgPersonId === person.id ? "active" : ""}" type="button" data-directory-person="${escapeHtml(person.id)}">
+                      <span class="person-avatar ${meta.className}">${iconFor(person.name)}</span>
+                      <span class="person-line">
+                        <strong>${escapeHtml(person.name)}</strong>
+                        <small>${escapeHtml(person.title)} · ${escapeHtml(person.department)}</small>
+                      </span>
+                      <span class="person-kind ${meta.className}">${meta.label}</span>
+                    </button>
+                  `;
+                }).join("")
+              : '<p class="empty-copy">没有匹配的员工。</p>'
+          }
+        </div>
+      </aside>
+      <article class="person-profile">
+        ${
+          selected
+            ? `
+              <div class="person-profile-head">
+                <span class="person-avatar large ${selectedMeta.className}">${iconFor(selected.name)}</span>
+                <div>
+                  <span class="person-kind ${selectedMeta.className}">${selectedMeta.label}</span>
+                  <h3>${escapeHtml(selected.name)}</h3>
+                  <p>${escapeHtml(selected.title)} · ${escapeHtml(selected.department)}</p>
+                </div>
+                <span class="connection-badge ${selected.connectionStatus === "connected" || selected.connectionStatus === "configured" ? "online" : ""}">${escapeHtml(selected.connectionLabel)}</span>
+              </div>
+              <div class="profile-section">
+                <span>职责边界</span>
+                <p>${escapeHtml(selected.responsibility)}</p>
+              </div>
+              <div class="profile-grid">
+                <div class="profile-section">
+                  <span>岗位</span>
+                  <div class="profile-tags">${(selected.roles.length ? selected.roles : ["待定义岗位"]).map((role) => `<b>${escapeHtml(role)}</b>`).join("")}</div>
+                </div>
+                <div class="profile-section">
+                  <span>能力</span>
+                  <div class="profile-tags">${(selected.capabilities.length ? selected.capabilities : ["待补充 Skill"]).map((capability) => `<b>${escapeHtml(capability)}</b>`).join("")}</div>
+                </div>
+              </div>
+              <div class="profile-section">
+                <span>技术架构</span>
+                <p>${selected.agentName ? `${escapeHtml(selected.agentName)} · ${escapeHtml(selected.connectorType)}` : "人工员工，不需要 Agent 适配器。"}</p>
+              </div>
+              <div class="profile-actions">
+                ${selected.employeeId ? `<button class="button" type="button" data-directory-edit="${escapeHtml(selected.employeeId)}">编辑名片</button>` : ""}
+                ${selected.employeeId ? `<button class="button danger" type="button" data-directory-delete="${escapeHtml(selected.employeeId)}">移出通讯录</button>` : ""}
+                ${selected.employeeId && selected.type !== "carbon" ? `<button class="button primary" type="button" data-directory-factory="${escapeHtml(selected.employeeId)}">数字员工工厂</button>` : ""}
+                ${selected.agentId ? `<button class="button" type="button" data-open-agent-guide>检查接入</button>` : ""}
+              </div>
+            `
+            : '<p class="empty-copy">还没有员工可显示。</p>'
+        }
       </article>
     </section>
-    ${!hasDefaults ? `
-    <section class="page-section">
-      <div class="section-head"><h3>快速开始</h3></div>
-      <p class="empty-copy">初始化 7 大岗位族默认模板，快速搭建组织框架。</p>
-      <button class="button primary" type="button" data-init-defaults>生成默认模板</button>
-    </section>` : ""}
-    <section class="page-section">
-      <div class="section-head"><h3>数字员工工厂</h3></div>
-      <p class="empty-copy">为硅基/混编员工配置技能匹配、入职培训和师父带教。${draftCount > 0 ? `当前有 ${draftCount} 个草稿进行中。` : ""}</p>
-      <button class="button primary" type="button" data-goto-factory>进入数字员工工厂</button>
+    <section class="directory-foot">
+      ${!hasDefaults ? `
+        <article>
+          <strong>岗位模板还未初始化</strong>
+          <p>导入 7 大岗位族后，通讯录可以把员工和标准岗位、Skill、验收标准绑定起来。</p>
+          <button class="button primary" type="button" data-init-defaults>生成默认模板</button>
+        </article>` : ""}
+      <article>
+        <strong>数字员工工厂</strong>
+        <p>为硅基/混编员工配置技能匹配、入职培训和师父带教。${draftCount > 0 ? `当前有 ${draftCount} 个草稿进行中。` : "当前没有进行中的草稿。"}</p>
+        <button class="button" type="button" data-goto-factory>进入工厂</button>
+      </article>
     </section>
-    ${(h.emptyFamilies && h.emptyFamilies.length > 0) ? `
-    <section class="page-section">
-      <div class="section-head"><h3>岗位族缺口</h3></div>
-      <p class="empty-copy">以下岗位族暂无任何岗位：${h.emptyFamilies.map((f) => `「${escapeHtml(f)}」`).join("、")}</p>
-    </section>` : ""}
-    ${(h.rolesWithoutEmployees && h.rolesWithoutEmployees.length > 0) ? `
-    <section class="page-section">
-      <div class="section-head"><h3>无员工岗位</h3></div>
-      <div class="manage-list">
-        ${h.rolesWithoutEmployees.map((r) => `<article class="manage-row"><div class="manage-copy"><strong>${escapeHtml(r.name)}</strong></div></article>`).join("")}
-      </div>
-    </section>` : ""}
-    ${(h.rolesWithoutSkills && h.rolesWithoutSkills.length > 0) ? `
-    <section class="page-section">
-      <div class="section-head"><h3>无 Skill 岗位</h3></div>
-      <div class="manage-list">
-        ${h.rolesWithoutSkills.map((r) => `<article class="manage-row"><div class="manage-copy"><strong>${escapeHtml(r.name)}</strong></div></article>`).join("")}
-      </div>
-    </section>` : ""}
-    ${(h.draftEmployees && h.draftEmployees.length > 0) ? `
-    <section class="page-section">
-      <div class="section-head"><h3>数字员工草稿进行中</h3></div>
-      <div class="manage-list">
-        ${h.draftEmployees.map((e) => `<article class="manage-row"><div class="manage-copy"><strong>${escapeHtml(e.name)}</strong><p>草稿状态：${escapeHtml(e.draftStatus)}</p></div></article>`).join("")}
-      </div>
-    </section>` : ""}
   `;
+  container.querySelector("[data-directory-search]")?.addEventListener("input", (event) => {
+    state.orgSearch = event.target.value;
+    renderOrgOverview(container);
+  });
+  container.querySelectorAll("[data-directory-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.orgTypeFilter = button.dataset.directoryFilter;
+      state.selectedOrgPersonId = null;
+      renderOrgOverview(container);
+    });
+  });
+  container.querySelectorAll("[data-directory-person]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedOrgPersonId = button.dataset.directoryPerson;
+      renderOrgOverview(container);
+    });
+  });
+  container.querySelectorAll("[data-directory-edit]").forEach((button) => {
+    button.addEventListener("click", () => run(() => openEmployeeEditModal(button.dataset.directoryEdit)));
+  });
+  container.querySelectorAll("[data-directory-delete]").forEach((button) => {
+    button.addEventListener("click", () => run(() => archiveEmployee(button.dataset.directoryDelete)));
+  });
+  container.querySelectorAll("[data-directory-factory]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.factoryEmployeeId = button.dataset.directoryFactory;
+      state.orgSubPage = "factory";
+      renderOrganizationPage();
+    });
+  });
   const initBtn = container.querySelector("[data-init-defaults]");
   if (initBtn) {
     initBtn.addEventListener("click", () => {
@@ -3268,6 +3698,142 @@ function openWorkItemCreateModal() {
   });
 }
 
+function riskLabelForWorkItem(item) {
+  if (item.isOverdue) return ["逾期", "danger"];
+  if (item.status === "blocked") return ["阻塞", "danger"];
+  if (item.status === "waiting_dependency") return ["等依赖", "warn"];
+  if (item.status === "review_pending") return ["待验收", "info"];
+  return [WORK_ITEM_STATUS_LABELS[item.status] || item.status, WORK_ITEM_STATUS_CLASS[item.status] || "neutral"];
+}
+
+function renderLeadershipDashboardPage() {
+  if (!state.workbenchData || !state.flowData) {
+    emptyPanel.innerHTML = `<div class="page-head"><div><div class="eyebrow">Command</div><h2>领导驾驶舱</h2><p>正在汇总项目、员工、流程和工作项状态...</p></div></div>`;
+    run(async () => {
+      await Promise.all([loadWorkbenchData(), loadFlowData()]);
+      renderLeadershipDashboardPage();
+    });
+    return;
+  }
+  const workspace = state.workspace || {};
+  const projects = workspace.projects || [];
+  const agents = workspace.agents || [];
+  const adapters = workspace.technicalAdapters || workspace.localTools || [];
+  const items = state.workbenchData.items || [];
+  const progress = state.workbenchData.progress || {};
+  const resources = state.workbenchData.resources || {};
+  const activeProjects = projects.filter((project) => project.status !== "archived");
+  const readyAdapters = adapters.filter((adapter) => ["connected", "configured"].includes(adapter.connectionStatus));
+  const risks = items.filter((item) => item.isOverdue || item.status === "blocked" || item.status === "waiting_dependency").slice(0, 5);
+  const queue = items.filter((item) => !["done", "cancelled"].includes(item.status)).slice(0, 6);
+  const localAgents = agents.filter((agent) => agent.architecture?.runtimeScope === "local" || agent.type === "local");
+  const flowCount = state.flowData.templates?.length || 0;
+  emptyPanel.innerHTML = `
+    <div class="page-head cockpit-page-head">
+      <div>
+        <div class="eyebrow">Command</div>
+        <h2>领导驾驶舱</h2>
+        <p>统一查看项目推进、碳硅员工负载、Agent 接入和需要人工判断的风险。</p>
+      </div>
+      <div class="page-actions">
+        <button class="button" type="button" data-dashboard-action="new-project">新建项目</button>
+        <button class="button primary" type="button" data-dashboard-action="new-workitem">新建工作项</button>
+      </div>
+    </div>
+    <section class="cockpit-hero">
+      <article>
+        <span>经营态势</span>
+        <strong>${percent(progress.completionRate)}</strong>
+        <p>${progress.total || 0} 个工作项 · ${progress.done || 0} 已完成 · ${progress.blocked || 0} 阻塞 · ${progress.overdue || 0} 逾期</p>
+      </article>
+      <div class="cockpit-metrics">
+        <div><span>项目</span><strong>${activeProjects.length}</strong><small>活动中</small></div>
+        <div><span>员工</span><strong>${agents.length}</strong><small>碳硅池</small></div>
+        <div><span>流程</span><strong>${flowCount}</strong><small>模板</small></div>
+        <div><span>Agent</span><strong>${readyAdapters.length}/${adapters.length}</strong><small>已接入</small></div>
+      </div>
+    </section>
+    <section class="cockpit-grid">
+      <article class="cockpit-panel large">
+        <div class="section-head">
+          <h3>调度队列</h3>
+          <button class="button tiny" type="button" data-dashboard-tab="workbench">打开工作台</button>
+        </div>
+        <div class="command-queue">
+          ${
+            queue.length
+              ? queue.map((item) => {
+                  const [label, cls] = riskLabelForWorkItem(item);
+                  return `
+                    <div class="command-row">
+                      <div>
+                        <strong>${escapeHtml(item.title)}</strong>
+                        <p>${escapeHtml(item.projectTitle || item.projectId)} · ${escapeHtml(workItemStage(item))} · ${escapeHtml(workItemAssignee(item))}</p>
+                      </div>
+                      <span class="workitem-status ${cls}">${escapeHtml(label)}</span>
+                    </div>
+                  `;
+                }).join("")
+              : '<p class="empty-copy">暂无待调度工作项。</p>'
+          }
+        </div>
+      </article>
+      <article class="cockpit-panel">
+        <div class="section-head">
+          <h3>风险与验收</h3>
+          <button class="button tiny" type="button" data-dashboard-tab="workflow">打开编排</button>
+        </div>
+        <div class="risk-list">
+          ${
+            risks.length
+              ? risks.map((item) => `<div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.blockedReason || item.unmetDependencies?.map((dep) => dep.title).join("、") || "需要人工判断")}</p></div>`).join("")
+              : '<p class="empty-copy">没有阻塞或逾期工作项。</p>'
+          }
+        </div>
+      </article>
+      <article class="cockpit-panel">
+        <div class="section-head">
+          <h3>本机智能体</h3>
+          <button class="button tiny" type="button" data-dashboard-action="bridge">检查接入</button>
+        </div>
+        <div class="agent-strip">
+          ${localAgents.slice(0, 5).map((agent) => `
+            <button class="agent-chip" type="button" data-dashboard-tab="organization">
+              <span class="${agent.status === "online" ? "online" : "pending"}"></span>
+              <strong>${escapeHtml(agent.name)}</strong>
+              <small>${escapeHtml(agent.connection?.statusLabel || agent.role || "待检测")}</small>
+            </button>
+          `).join("")}
+        </div>
+      </article>
+      <article class="cockpit-panel">
+        <div class="section-head">
+          <h3>资源负载</h3>
+          <button class="button tiny" type="button" data-dashboard-tab="organization">打开通讯录</button>
+        </div>
+        <div class="resource-snapshot">
+          <strong>${formatHours(resources.resources?.reduce((sum, item) => sum + Number(item.remainingHours || 0), 0) || 0)}</strong>
+          <p>${resources.totalResources || 0} 个执行者 · ${resources.overloaded || 0} 个需要关注 · ${resources.unassigned?.total || 0} 个未分配</p>
+        </div>
+      </article>
+    </section>
+  `;
+  emptyPanel.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
+    button.addEventListener("click", () => activateTab(button.dataset.dashboardTab));
+  });
+  emptyPanel.querySelectorAll("[data-dashboard-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.dashboardAction;
+      if (action === "new-project") newProjectButton.click();
+      if (action === "new-workitem") openWorkItemCreateModal();
+      if (action === "bridge") {
+        toggleBridgeModal(true);
+        run(renderBridge);
+      }
+    });
+  });
+}
+
 const FLOW_CATEGORY_LABELS = { value: "价值流", enabling: "使能流", supporting: "支撑流" };
 const FLOW_REVIEW_LABELS = { carbon: "碳评审", silicon: "硅评审", hybrid: "碳硅评审" };
 const GATE_STATUS_META = {
@@ -3299,6 +3865,7 @@ function renderFlowPage() {
     return;
   }
   const subPages = [
+    { key: "canvas", label: "编排画布" },
     { key: "library", label: "流程库" },
     { key: "instances", label: "项目实例" },
   ];
@@ -3306,8 +3873,8 @@ function renderFlowPage() {
     <div class="page-head">
       <div>
         <div class="eyebrow">Flow</div>
-        <h2>流程</h2>
-        <p>定义可复用的流程模板，为项目绑定流程，用关口评审驱动每一阶段的准入准出。</p>
+        <h2>流程编排中心</h2>
+        <p>定义可复用流程模板，并在画布中把每个阶段映射到碳基、硅基和混合验收节点。</p>
       </div>
       <button class="button primary" type="button" data-flow-create>新建流程</button>
     </div>
@@ -3320,13 +3887,14 @@ function renderFlowPage() {
     const btn = event.target.closest("[data-flow-sub]");
     if (!btn) return;
     state.flowSubPage = btn.dataset.flowSub;
-    state.selectedFlowId = null;
+    if (state.flowSubPage !== "canvas") state.selectedFlowId = null;
     renderFlowPage();
   });
   emptyPanel.querySelector("[data-flow-create]").addEventListener("click", openFlowCreateModal);
 
   const container = document.getElementById("flowSubContent");
-  if (state.flowSubPage === "instances") renderFlowInstances(container);
+  if (state.flowSubPage === "canvas") renderOrchestrationSurface(container, { source: "flow" });
+  else if (state.flowSubPage === "instances") renderFlowInstances(container);
   else if (state.selectedFlowId) {
     const template = state.flowData.templates.find((t) => t.id === state.selectedFlowId);
     if (template) renderFlowDetail(container, template);
@@ -3518,7 +4086,8 @@ function initFlowPresets() {
     try {
       const result = await api.initFlowPresets();
       await loadFlowData();
-      renderFlowPage();
+      if (state.activeTab === "workflow") renderWorkflowHomePage();
+      else renderFlowPage();
       showToast(`已导入 ${result.data.created} 个预设流程模板`);
     } catch (error) {
       showToast(error.message, "error");
@@ -3566,6 +4135,10 @@ function renderActiveTab() {
   overviewPanel.style.display = isOverview ? "block" : "none";
   emptyPanel.style.display = isOverview ? "none" : "block";
   if (isOverview) return;
+  if (state.activeTab === "dashboard") {
+    renderLeadershipDashboardPage();
+    return;
+  }
   if (state.activeTab === "topics") {
     renderTopicsPage();
     return;
@@ -4135,7 +4708,7 @@ async function renderBridge(bridge) {
   const readyAdapters = adapters.filter((adapter) => ["connected", "configured"].includes(adapter.connectionStatus)).length;
   container.innerHTML = `
     <div class="modal-note">
-      <span><i class="status-dot"></i>${onlineEmployees} / ${agents.length} \u4f4d\u78b3\u7845\u5458\u5de5\u53ef\u7528 ? ${readyAdapters} / ${adapters.length} \u4e2a\u6280\u672f\u67b6\u6784\u5df2\u63a5\u5165</span>
+      <span><i class="status-dot"></i>${onlineEmployees} / ${agents.length} \u4f4d\u78b3\u7845\u5458\u5de5\u53ef\u7528 · ${readyAdapters} / ${adapters.length} \u4e2a\u6280\u672f\u67b6\u6784\u5df2\u63a5\u5165</span>
       <button class="button" type="button" data-refresh-bridge>\u91cd\u65b0\u68c0\u6d4b</button>
     </div>
     <div class="modal-split">
@@ -4147,8 +4720,8 @@ async function renderBridge(bridge) {
             <span class="connection-icon ${agent.architecture?.runtimeScope === "local" ? "blue" : ""}">${iconFor(agent.alias || agent.name)}</span>
             <span class="connection-copy">
               <span class="connection-name">${escapeHtml(agent.name)} <small>${escapeHtml(employeeTypeLabel(agent))}</small></span>
-              <span class="connection-desc">${escapeHtml(agent.employee?.department || "\u672a\u5206\u7ec4")} ? ${escapeHtml(agent.employee?.title || agent.role || "")}</span>
-              <span class="connection-desc">${escapeHtml(agent.architecture?.provider || "-")} / ${escapeHtml(agent.architecture?.model || "-")} ? ${escapeHtml(agent.connection?.statusLabel || "\u5f85\u63a5\u5165")}</span>
+              <span class="connection-desc">${escapeHtml(agent.employee?.department || "\u672a\u5206\u7ec4")} · ${escapeHtml(agent.employee?.title || agent.role || "")}</span>
+              <span class="connection-desc">${escapeHtml(agent.architecture?.provider || "-")} / ${escapeHtml(agent.architecture?.model || "-")} · ${escapeHtml(agent.connection?.statusLabel || "\u5f85\u63a5\u5165")}</span>
             </span>
             <input data-alias-agent="${escapeHtml(agent.id)}" value="${escapeHtml(agent.alias || "")}" aria-label="${escapeHtml(agent.name)} alias" />
           </div>
@@ -4162,7 +4735,7 @@ async function renderBridge(bridge) {
             <span class="connection-icon ${adapter.scope === "local" ? "blue" : ""}">${iconFor(adapter.name)}</span>
             <span class="connection-copy">
               <span class="connection-name">${escapeHtml(adapter.name)} <small>${escapeHtml(adapter.scope === "local" ? "\u672c\u673a" : "\u4e91\u7aef")}</small></span>
-              <span class="connection-desc">${escapeHtml(adapter.provider)} ? ${escapeHtml(adapter.connectorType)} ? ${escapeHtml(adapterStatusLabel(adapter))}</span>
+              <span class="connection-desc">${escapeHtml(adapter.provider)} · ${escapeHtml(adapter.connectorType)} · ${escapeHtml(adapterStatusLabel(adapter))}</span>
               <span class="connection-desc">${escapeHtml(adapter.detail || "")}</span>
               ${adapter.id === "openclaw" && adapter.connectionStatus !== "connected" ? '<button class="bridge-inline-action" type="button" data-start-openclaw>\u521d\u59cb\u5316\u5e76\u542f\u52a8\u7f51\u5173</button>' : ""}
               ${adapter.scope === "cloud" ? `<button class="bridge-inline-action" type="button" data-configure-cloud-adapter="${escapeHtml(adapter.id)}" data-adapter-name="${escapeHtml(adapter.name)}" data-endpoint="${escapeHtml(adapter.config?.endpoint || "")}" data-workspace="${escapeHtml(adapter.config?.workspace || "")}">\u914d\u7f6e\u4e91\u7aef\u63a5\u5165</button>` : ""}

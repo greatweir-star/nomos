@@ -4738,24 +4738,931 @@
       .button.tiny { min-height: 26px; padding: 0 9px; font-size: 11px; border-radius: 7px; }
       .button.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
       .button.ghost:hover { border-color: var(--border-strong); }
+
+      /* Nomos Apple-inspired operating system */
+      body[data-design-theme="apple"] {
+        --bg: #f5f5f7;
+        --paper: #ffffff;
+        --paper-soft: #f7f7f8;
+        --surface: rgba(255, 255, 255, 0.78);
+        --card: rgba(255, 255, 255, 0.86);
+        --ink: #1d1d1f;
+        --text: #1d1d1f;
+        --muted: #6e6e73;
+        --line: rgba(0, 0, 0, 0.08);
+        --line-strong: rgba(0, 0, 0, 0.14);
+        --primary: #0a84ff;
+        --primary-soft: rgba(10, 132, 255, 0.11);
+        --green: #248a3d;
+        --green-soft: rgba(52, 199, 89, 0.13);
+        --blue: #0a84ff;
+        --blue-soft: rgba(10, 132, 255, 0.12);
+        --amber: #b26a00;
+        --amber-soft: rgba(255, 159, 10, 0.14);
+        --red: #d70015;
+        --red-soft: rgba(255, 59, 48, 0.12);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+        --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.07);
+        color: var(--ink);
+        background: var(--bg);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      body[data-design-theme="apple"]::before {
+        display: none;
+      }
+
+      body[data-design-theme="apple"] .app-shell {
+        grid-template-columns: 72px 292px minmax(760px, 1fr) 320px;
+        background: var(--bg);
+      }
+
+      body[data-design-theme="apple"] .app-shell.inspector-collapsed {
+        grid-template-columns: 72px 292px minmax(760px, 1fr) 0;
+      }
+
+      body[data-design-theme="apple"] .app-shell.workspace-empty {
+        grid-template-columns: 72px 292px minmax(0, 1fr);
+      }
+
+      body[data-design-theme="apple"] .rail {
+        gap: 12px;
+        padding: 16px 10px;
+        color: rgba(255, 255, 255, 0.74);
+        border-right: 0;
+        background: #1d1d1f;
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .brand-mark,
+      body[data-design-theme="apple"] .welcome-mark {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 8px;
+        color: #1d1d1f;
+        background: #f5f5f7;
+        box-shadow: none;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 0;
+      }
+
+      body[data-design-theme="apple"] .brand-mark::before,
+      body[data-design-theme="apple"] .welcome-mark::before {
+        color: #1d1d1f;
+        content: "N";
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      body[data-design-theme="apple"] .rail-menu {
+        gap: 8px;
+      }
+
+      body[data-design-theme="apple"] .rail-tab {
+        width: 52px;
+        min-height: 48px;
+        gap: 4px;
+        border: 0;
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.52);
+        background: transparent;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+
+      body[data-design-theme="apple"] .rail-tab .icon {
+        width: 19px;
+        height: 19px;
+        stroke-width: 1.65;
+      }
+
+      body[data-design-theme="apple"] .rail-tab:hover,
+      body[data-design-theme="apple"] .rail-tab.active {
+        color: #ffffff;
+        border: 0;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .rail-tab.active::before {
+        display: none;
+      }
+
+      body[data-design-theme="apple"] .workspace {
+        color: var(--ink);
+        border-right: 1px solid var(--line);
+        background: rgba(245, 245, 247, 0.86);
+        box-shadow: none;
+        backdrop-filter: blur(22px);
+      }
+
+      body[data-design-theme="apple"] .main,
+      body[data-design-theme="apple"] .main-header {
+        color: var(--ink);
+        background: var(--paper);
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      body[data-design-theme="apple"] .main-header {
+        padding: 22px 30px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      body[data-design-theme="apple"] .empty-panel,
+      body[data-design-theme="apple"] .board {
+        padding: 24px 30px 30px;
+        background: var(--paper);
+      }
+
+      body[data-design-theme="apple"] .inspector {
+        color: var(--ink);
+        border-left: 1px solid var(--line);
+        background: rgba(247, 247, 248, 0.86);
+        backdrop-filter: blur(22px);
+      }
+
+      body[data-design-theme="apple"] .inspector-head {
+        border-bottom: 1px solid var(--line);
+        background: transparent;
+      }
+
+      body[data-design-theme="apple"] h1,
+      body[data-design-theme="apple"] h2,
+      body[data-design-theme="apple"] h3,
+      body[data-design-theme="apple"] .workspace-name,
+      body[data-design-theme="apple"] .project-title,
+      body[data-design-theme="apple"] .connection-name {
+        color: var(--ink);
+        text-shadow: none;
+        letter-spacing: 0;
+      }
+
+      body[data-design-theme="apple"] h1 {
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      body[data-design-theme="apple"] .workspace-name {
+        font-size: 19px;
+        font-weight: 700;
+      }
+
+      body[data-design-theme="apple"] .subtitle,
+      body[data-design-theme="apple"] .project-copy,
+      body[data-design-theme="apple"] .section-hint,
+      body[data-design-theme="apple"] .connection-desc,
+      body[data-design-theme="apple"] .activity-copy,
+      body[data-design-theme="apple"] .empty-copy,
+      body[data-design-theme="apple"] .page-head p {
+        color: var(--muted);
+      }
+
+      body[data-design-theme="apple"] .eyebrow,
+      body[data-design-theme="apple"] .section-label,
+      body[data-design-theme="apple"] .inspector-label {
+        color: #8e8e93;
+        font-size: 11px;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      body[data-design-theme="apple"] .button,
+      body[data-design-theme="apple"] .round-action,
+      body[data-design-theme="apple"] .icon-button,
+      body[data-design-theme="apple"] .project-search,
+      body[data-design-theme="apple"] .form-field input,
+      body[data-design-theme="apple"] .form-field textarea,
+      body[data-design-theme="apple"] .form-field select,
+      body[data-design-theme="apple"] .execution-select {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .button {
+        min-height: 32px;
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      body[data-design-theme="apple"] .button:hover {
+        border-color: var(--line-strong);
+        background: #ffffff;
+        transform: none;
+      }
+
+      body[data-design-theme="apple"] .button.primary,
+      body[data-design-theme="apple"] .button.dark {
+        color: #ffffff;
+        border-color: #0071e3;
+        background: #0071e3;
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .button.danger {
+        color: var(--red);
+        border-color: rgba(215, 0, 21, 0.18);
+        background: rgba(255, 59, 48, 0.08);
+      }
+
+      body[data-design-theme="apple"] .tab {
+        color: #86868b;
+        font-weight: 600;
+      }
+
+      body[data-design-theme="apple"] .tab.active {
+        color: var(--ink);
+        border-color: var(--primary);
+        text-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .goal-card,
+      body[data-design-theme="apple"] .summary-card,
+      body[data-design-theme="apple"] .stage-card,
+      body[data-design-theme="apple"] .thread-card,
+      body[data-design-theme="apple"] .checkpoint-card,
+      body[data-design-theme="apple"] .active-task,
+      body[data-design-theme="apple"] .connection-row,
+      body[data-design-theme="apple"] .local-status,
+      body[data-design-theme="apple"] .manage-card,
+      body[data-design-theme="apple"] .manage-list,
+      body[data-design-theme="apple"] .audit-list,
+      body[data-design-theme="apple"] .workbench-metric,
+      body[data-design-theme="apple"] .workbench-panel,
+      body[data-design-theme="apple"] .flow-card,
+      body[data-design-theme="apple"] .flow-stage-item,
+      body[data-design-theme="apple"] .flow-track-node,
+      body[data-design-theme="apple"] .modal,
+      body[data-design-theme="apple"] .modal-content {
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        box-shadow: var(--shadow-soft);
+      }
+
+      body[data-design-theme="apple"] .goal-card::after,
+      body[data-design-theme="apple"] .summary-card::before,
+      body[data-design-theme="apple"] .stage-card::after,
+      body[data-design-theme="apple"] .os-hero::before,
+      body[data-design-theme="apple"] .os-card::before {
+        display: none;
+      }
+
+      body[data-design-theme="apple"] .project-item {
+        border-radius: 8px;
+      }
+
+      body[data-design-theme="apple"] .project-item:hover,
+      body[data-design-theme="apple"] .project-item.active {
+        background: rgba(0, 0, 0, 0.05);
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .project-avatar,
+      body[data-design-theme="apple"] .connection-icon,
+      body[data-design-theme="apple"] .activity-icon,
+      body[data-design-theme="apple"] .agent-dot,
+      body[data-design-theme="apple"] .file-symbol,
+      body[data-design-theme="apple"] .flow-stage-index {
+        color: #3a3a3c;
+        border-radius: 8px;
+        background: #e9e9eb;
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .chip,
+      body[data-design-theme="apple"] .date-chip,
+      body[data-design-theme="apple"] .workitem-status {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        box-shadow: none;
+      }
+
+      body[data-design-theme="apple"] .org-nav {
+        display: inline-flex;
+        gap: 2px;
+        margin-bottom: 18px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f2f2f4;
+      }
+
+      body[data-design-theme="apple"] .org-nav-item {
+        min-height: 30px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 6px;
+        color: #6e6e73;
+        background: transparent;
+        font-weight: 600;
+      }
+
+      body[data-design-theme="apple"] .org-nav-item.active {
+        color: var(--ink);
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .people-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .people-stat,
+      .directory-shell,
+      .person-profile,
+      .directory-foot article,
+      .cockpit-hero,
+      .cockpit-panel,
+      .orchestration-shell,
+      .orchestration-library,
+      .orchestration-inspector,
+      .swimlane {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .people-stat {
+        min-height: 104px;
+        padding: 15px;
+      }
+
+      .people-stat span,
+      .cockpit-hero span,
+      .library-head span,
+      .profile-section span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .people-stat strong {
+        display: block;
+        margin-top: 8px;
+        color: var(--ink);
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .people-stat p,
+      .profile-section p,
+      .cockpit-panel p,
+      .canvas-head p,
+      .swimlane-title span {
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .people-stat.strong {
+        background: #f3f8ff;
+        border-color: rgba(10, 132, 255, 0.18);
+      }
+
+      .directory-shell {
+        display: grid;
+        grid-template-columns: 330px minmax(0, 1fr);
+        min-height: 520px;
+        overflow: hidden;
+      }
+
+      .directory-sidebar {
+        border-right: 1px solid var(--line);
+        background: rgba(247, 247, 248, 0.78);
+      }
+
+      .directory-toolbar {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .directory-search {
+        width: 100%;
+        height: 34px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        outline: none;
+        background: #ffffff;
+      }
+
+      .directory-filters {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+
+      .directory-filters button {
+        min-height: 28px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .directory-filters button.active {
+        color: var(--ink);
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .directory-list {
+        display: grid;
+        gap: 4px;
+        padding: 10px;
+        max-height: 560px;
+        overflow: auto;
+      }
+
+      .directory-person {
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 58px;
+        padding: 8px;
+        border: 0;
+        border-radius: 8px;
+        text-align: left;
+        background: transparent;
+      }
+
+      .directory-person:hover,
+      .directory-person.active {
+        background: #ffffff;
+      }
+
+      .person-avatar {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 8px;
+        color: #ffffff;
+        background: #8e8e93;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .person-avatar.large {
+        width: 58px;
+        height: 58px;
+        font-size: 15px;
+      }
+
+      .person-avatar.carbon,
+      .person-kind.carbon {
+        background: #1d1d1f;
+        color: #ffffff;
+      }
+
+      .person-avatar.silicon,
+      .person-kind.silicon {
+        background: #0a84ff;
+        color: #ffffff;
+      }
+
+      .person-avatar.hybrid,
+      .person-kind.hybrid {
+        background: #30d158;
+        color: #06250f;
+      }
+
+      .person-line {
+        min-width: 0;
+      }
+
+      .person-line strong,
+      .person-line small {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .person-line small {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .person-kind {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .person-profile {
+        padding: 18px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .person-profile-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .person-profile-head h3 {
+        margin-top: 6px;
+        font-size: 24px;
+      }
+
+      .connection-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        color: #8a5a00;
+        background: var(--amber-soft);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .connection-badge.online {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .profile-section {
+        margin-top: 18px;
+      }
+
+      .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .profile-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 9px;
+      }
+
+      .profile-tags b {
+        min-height: 26px;
+        padding: 5px 9px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--ink);
+        background: #f7f7f8;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .profile-actions,
+      .canvas-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 20px;
+      }
+
+      .directory-foot {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .directory-foot article {
+        padding: 14px;
+      }
+
+      .directory-foot p {
+        margin: 6px 0 12px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .orchestration-shell {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr) 260px;
+        min-height: 590px;
+        overflow: hidden;
+      }
+
+      .orchestration-library,
+      .orchestration-inspector {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .orchestration-library {
+        padding: 14px;
+        border-right: 1px solid var(--line);
+        background: rgba(247, 247, 248, 0.78);
+      }
+
+      .library-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .library-head strong {
+        font-size: 22px;
+      }
+
+      .template-list {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .template-row {
+        display: grid;
+        gap: 4px;
+        min-height: 58px;
+        padding: 10px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--ink);
+        background: transparent;
+        text-align: left;
+      }
+
+      .template-row small {
+        color: var(--muted);
+      }
+
+      .template-row:hover,
+      .template-row.active {
+        border-color: var(--line);
+        background: #ffffff;
+      }
+
+      .orchestration-canvas {
+        min-width: 0;
+        padding: 18px;
+      }
+
+      .canvas-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .canvas-head h3 {
+        margin-top: 4px;
+        font-size: 24px;
+      }
+
+      .swimlane-board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .swimlane {
+        min-height: 430px;
+        padding: 12px;
+      }
+
+      .swimlane-title {
+        min-height: 62px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .swimlane-title strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .swimlane-nodes {
+        display: grid;
+        gap: 9px;
+        margin-top: 12px;
+      }
+
+      .flow-node {
+        display: grid;
+        gap: 5px;
+        min-height: 108px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        background: #ffffff;
+        text-align: left;
+      }
+
+      .flow-node:hover,
+      .flow-node.active {
+        border-color: rgba(10, 132, 255, 0.32);
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+      }
+
+      .flow-node span {
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .flow-node small {
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .orchestration-inspector {
+        padding: 18px;
+        border-left: 1px solid var(--line);
+        background: rgba(247, 247, 248, 0.78);
+      }
+
+      .orchestration-inspector h3 {
+        margin-top: 8px;
+        font-size: 22px;
+      }
+
+      .cockpit-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(440px, 0.9fr);
+        gap: 18px;
+        align-items: stretch;
+        padding: 22px;
+        margin-bottom: 16px;
+        background: #f7f9fc;
+        border-color: rgba(10, 132, 255, 0.14);
+      }
+
+      .cockpit-hero strong {
+        display: block;
+        margin-top: 10px;
+        font-size: 48px;
+        letter-spacing: 0;
+      }
+
+      .cockpit-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .cockpit-metrics div {
+        display: grid;
+        gap: 5px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .cockpit-metrics strong {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .cockpit-metrics small {
+        color: var(--muted);
+      }
+
+      .cockpit-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.75fr);
+        gap: 12px;
+      }
+
+      .cockpit-panel {
+        min-height: 220px;
+        padding: 15px;
+      }
+
+      .cockpit-panel.large {
+        grid-row: span 2;
+      }
+
+      .command-queue,
+      .risk-list,
+      .agent-strip {
+        display: grid;
+        gap: 8px;
+      }
+
+      .command-row,
+      .risk-list div,
+      .agent-chip {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .command-row p,
+      .risk-list p {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .agent-chip {
+        grid-template-columns: auto minmax(0, 1fr);
+        text-align: left;
+      }
+
+      .agent-chip small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+      }
+
+      .resource-snapshot strong {
+        display: block;
+        font-size: 30px;
+      }
+
+      @media (max-width: 1280px) {
+        body[data-design-theme="apple"] .app-shell {
+          grid-template-columns: 72px 270px minmax(720px, 1fr);
+        }
+
+        body[data-design-theme="apple"] .inspector {
+          display: none;
+        }
+
+        .orchestration-shell,
+        .directory-shell,
+        .cockpit-hero,
+        .cockpit-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .orchestration-library,
+        .orchestration-inspector,
+        .directory-sidebar {
+          border: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .people-summary,
+        .directory-foot,
+        .swimlane-board,
+        .cockpit-metrics {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
-  <body data-design-theme="slate">
+  <body data-design-theme="apple">
     <div class="app-shell">
       <nav class="rail" aria-label="Nomos 首页导航">
         <div class="brand-mark">N</div>
         <div class="rail-menu">
-          <button class="rail-tab active" title="概览" data-rail-action="overview" aria-label="概览">
+          <button class="rail-tab active" title="领导驾驶舱" data-rail-action="dashboard" aria-label="领导驾驶舱">
             <svg class="icon"><use href="#icon-grid"></use></svg>
-            <span>概览</span>
+            <span>驾驶舱</span>
+          </button>
+          <button class="rail-tab" title="项目" data-rail-action="overview" aria-label="项目">
+            <svg class="icon"><use href="#icon-book"></use></svg>
+            <span>项目</span>
           </button>
           <button class="rail-tab" title="话题" data-rail-action="topics" aria-label="话题">
             <svg class="icon"><use href="#icon-message"></use></svg>
             <span>话题</span>
           </button>
-          <button class="rail-tab" title="工作流" data-rail-action="workflow" aria-label="工作流">
+          <button class="rail-tab" title="工作流编排" data-rail-action="workflow" aria-label="工作流编排">
             <svg class="icon"><use href="#icon-flow"></use></svg>
-            <span>工作流</span>
+            <span>编排</span>
           </button>
           <button class="rail-tab" title="工作台" data-rail-action="workbench" aria-label="工作台">
             <svg class="icon"><use href="#icon-grid"></use></svg>
