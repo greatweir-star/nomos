@@ -112,8 +112,9 @@ test("workspace seeds projects and paired local agents", async () => {
     assert.equal(response.status, 200);
     const workspace = await response.json();
     assert.equal(workspace.projects.length, 3);
-    assert.equal(workspace.agents.filter((agent) => agent.type === "local").length, 4);
+    assert.equal(workspace.agents.filter((agent) => agent.type === "local").length, 5);
     assert.ok(workspace.agents.some((agent) => agent.id === "alice"));
+    assert.ok(workspace.agents.some((agent) => agent.id === "kimi-cli"));
     assert.equal(workspace.bridge.status, "online");
   });
 });
@@ -532,6 +533,165 @@ test("agent router selects a connected adapter and keeps OpenClaw inactive", asy
               supportsExecution: false,
             }),
           },
+        },
+      },
+    },
+  );
+});
+
+test("work item dispatch routes research tasks to Kimi and updates the work item after execution", async () => {
+  const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "nomos-kimi-workitem-"));
+  try {
+    await withServer(
+      async (url) => {
+        const created = await fetch(`${url}/api/work-items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: "project-website",
+            title: "竞品调研与资料分析",
+            description: "调研竞品资料并输出长上下文分析结论。",
+            status: "ready",
+          }),
+        }).then((response) => response.json());
+        const workItem = created.data;
+
+        const route = await fetch(`${url}/api/work-items/${workItem.id}/agent-route`).then((response) => response.json());
+        assert.equal(route.selectedAgent.id, "kimi-cli");
+        assert.equal(route.intent, "research");
+
+        const preview = await fetch(`${url}/api/work-items/${workItem.id}/dispatch/preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workspaceDir, mode: "read-only" }),
+        }).then((response) => response.json());
+        assert.equal(preview.kind, "execution");
+        assert.equal(preview.execution.workItemId, workItem.id);
+        assert.equal(preview.execution.agentId, "kimi-cli");
+        assert.equal(preview.execution.tokenHash, undefined);
+
+        await fetch(`${url}/api/executions/${preview.execution.id}/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmationToken: preview.confirmationToken }),
+        });
+
+        let execution;
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+          execution = await fetch(`${url}/api/executions/${preview.execution.id}`).then((response) => response.json());
+          if (execution.status !== "running") break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        assert.equal(execution.status, "succeeded");
+
+        const updated = await fetch(`${url}/api/work-items/${workItem.id}`).then((response) => response.json());
+        assert.equal(updated.data.status, "review_pending");
+        assert.equal(updated.data.assignee.id, "kimi-cli");
+        assert.equal(updated.data.progress, 90);
+      },
+      {
+        executionManagerOptions: {
+          allowedRoots: [workspaceDir],
+          adapters: {
+            "kimi-cli": {
+              name: "Test Kimi",
+              command: "node",
+              connectorType: "CLI",
+              supportsExecution: true,
+              supportsDispatch: true,
+              dispatchMode: "local-process",
+              receiptMode: "process-exit",
+              resolveExecutable: () => process.execPath,
+              buildInvocation: ({ executable }) => ({
+                command: executable,
+                args: [
+                  "-e",
+                  "let text='';process.stdin.on('data',c=>text+=c);process.stdin.on('end',()=>process.stdout.write('kimi:'+text.slice(0,20)));",
+                ],
+              }),
+            },
+          },
+        },
+      },
+    );
+  } finally {
+    fs.rmSync(workspaceDir, { recursive: true, force: true });
+  }
+});
+
+test("work item dispatch can hand off coordination tasks to Alice with explicit confirmation", async () => {
+  const sentMessages = [];
+  await withServer(
+    async (url) => {
+      const created = await fetch(`${url}/api/work-items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: "project-website",
+          title: "协调设计复核事项",
+          description: "协调各智能体补齐验收信息。",
+          status: "ready",
+        }),
+      }).then((response) => response.json());
+      const workItem = created.data;
+
+      const preview = await fetch(`${url}/api/work-items/${workItem.id}/dispatch/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: "alice", note: "请优先协调阻塞信息。" }),
+      });
+      assert.equal(preview.status, 201);
+      const payload = await preview.json();
+      assert.equal(payload.kind, "alice-dispatch");
+      assert.equal(payload.dispatch.tokenHash, undefined);
+      assert.match(payload.dispatch.message, /协调设计复核事项/);
+
+      const rejected = await fetch(`${url}/api/alice-dispatches/${payload.dispatch.id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmationToken: payload.confirmationToken }),
+      });
+      assert.equal(rejected.status, 400);
+      assert.equal(sentMessages.length, 0);
+
+      const confirmed = await fetch(`${url}/api/alice-dispatches/${payload.dispatch.id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmationToken: payload.confirmationToken, confirm: true }),
+      });
+      assert.equal(confirmed.status, 202);
+      assert.equal(sentMessages.length, 1);
+      assert.match(sentMessages[0], /nomos 工作项协作任务/);
+
+      const updated = await fetch(`${url}/api/work-items/${workItem.id}`).then((response) => response.json());
+      assert.equal(updated.data.status, "in_progress");
+      assert.equal(updated.data.assignee.id, "alice");
+    },
+    {
+      executionManagerOptions: {
+        adapters: {
+          alice: {
+            name: "Alice",
+            command: "alice-cli",
+            connectorType: "MCP",
+            supportsExecution: false,
+            supportsDispatch: true,
+            dispatchMode: "mcp-message",
+            receiptMode: "manual-sync",
+            inspect: async () => ({
+              installed: true,
+              executable: null,
+              connectionStatus: "connected",
+              statusLabel: "MCP connected",
+              supportsExecution: false,
+            }),
+          },
+        },
+      },
+      aliceCoordinatorOptions: {
+        sendMessage: async ({ message }) => {
+          sentMessages.push(message);
+          return { content: "Alice accepted work item" };
         },
       },
     },

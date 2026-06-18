@@ -4,16 +4,17 @@ nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本�
 
 ## 当前能力
 
-- Electron Windows 桌面客户端，支持单实例启动。
+- Electron 桌面客户端，支持单实例启动；本地开发服务可在 macOS / Windows 运行。
 - 本机 HTTP 后端和 JSON 持久化，无需额外数据库。
 - 项目创建、编辑、删除，五阶段交付链路、消息记录和人工验收点。
 - 总管工作流状态机：任务信封、结构化回执、阶段交接、待验收、失败阻塞和上游返工。
 - 阶段交付物登记与删除，支持文件说明、URL 和阶段绑定。
-- Alice、Claude Code、Codex CLI、OpenClaw 本地工具检测和配对信息管理。
+- Alice、Codex CLI、Claude Code、Kimi、OpenClaw 本地工具检测和配对信息管理。
 - Alice MCP 状态检测和本地 `alice-cli` 协作入口。
 - Alice MCP 任务派发预览、显式确认和审计记录。
-- 统一 Agent 任务协议：Alice、Codex CLI 和 Claude Code 共用任务信封、派发状态和结构化回执。
-- Codex CLI 与 Claude Code 的受控本地执行：执行预览、目录授权、只读模式、写入二次确认、取消、重试、超时终止和异常恢复。
+- 统一 Agent Adapter 接口：本机 CLI、MCP 协作、云端 API 和本地网关按同一目录上报能力。
+- 统一 Agent 任务协议：Alice、Codex CLI、Claude Code 和 Kimi 共用任务信封、派发状态和结构化回执。
+- Codex CLI、Claude Code 与 Kimi 的受控本地执行：执行预览、目录授权、只读模式、写入二次确认、取消、重试、超时终止和异常恢复。
 - OpenClaw 仅在用户确认风险声明后初始化本地网关，默认不会自动启动。
 - 本地执行结果回写、敏感确认令牌隔离和审计日志。
 - 额外授权目录撤销。
@@ -27,6 +28,8 @@ nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本�
   截止时间、流程阶段绑定、旧 `workflowTasks` 镜像、依赖校验和事件账本。
 - 进度看板与资源看板：按项目、阶段、状态、负责人聚合完成率、阻塞、逾期、本周到期、
   预计剩余工时和最近工作项事件。
+- 工作项级 Agent 派发（v1.4 起步）：Nomos 可根据工作项内容推荐 Codex、Claude Code、Kimi 或 Alice，
+  CLI 型 Agent 进入本地执行确认链路，Alice 进入 MCP 协作消息确认链路。
 
 ## 当前开发方式
 
@@ -124,6 +127,8 @@ npm run dist:win
 - `POST /api/projects/:id/flow/stages/:flowStageId/review`
 - `GET|POST /api/work-items`
 - `GET|PATCH /api/work-items/:id`
+- `GET /api/work-items/:id/agent-route`
+- `POST /api/work-items/:id/dispatch/preview`
 - `POST /api/work-items/:id/cancel`
 - `POST /api/work-items/:id/dependencies`
 - `DELETE /api/work-items/:id/dependencies/:dependencyId`

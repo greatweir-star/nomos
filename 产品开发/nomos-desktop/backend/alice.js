@@ -7,6 +7,7 @@ const { createHash, randomUUID } = require("node:crypto");
 const { buildAgentTaskEnvelope, ensureProjectWorkflow, markTaskDispatched, submitStageReceipt } = require("./workflow");
 const { routeKey } = require("./agent-router");
 const { extractSessionId, parseAgentReceipt } = require("./agent-receipt");
+const { updateWorkItem, addComment } = require("./work-items");
 
 const MAX_MESSAGE_CHARS = 6000;
 const PREVIEW_TTL_MS = 10 * 60 * 1000;
@@ -166,6 +167,23 @@ function buildTaskMessage(envelope) {
     .slice(0, MAX_MESSAGE_CHARS);
 }
 
+function buildWorkItemTaskMessage({ project, workItem, note = "" }) {
+  return [
+    "nomos 工作项协作任务",
+    `项目：${project?.title || workItem.projectTitle || workItem.projectId}`,
+    project?.goal ? `项目目标：${project.goal}` : "",
+    `工作项：${workItem.title}`,
+    workItem.description ? `任务描述：${workItem.description}` : "",
+    workItem.acceptanceCriteria ? `验收标准：${workItem.acceptanceCriteria}` : "",
+    workItem.dueAt ? `截止时间：${workItem.dueAt}` : "",
+    note ? `补充说明：${note}` : "",
+    "请协调处理该工作项，并在完成后返回进度、成果摘要、交付物和需要人工确认的事项。",
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, MAX_MESSAGE_CHARS);
+}
+
 class AliceCoordinator {
   constructor({
     store,
@@ -209,6 +227,24 @@ class AliceCoordinator {
     return { dispatch: publicPreview(preview), confirmationToken };
   }
 
+  previewWorkItem({ workItem, project, note = "" }) {
+    if (!workItem) throw new Error("工作项不存在");
+    const confirmationToken = randomUUID();
+    const preview = {
+      id: randomUUID(),
+      projectId: workItem.projectId,
+      workItemId: workItem.id,
+      target: "Alice MCP",
+      status: "pending_confirmation",
+      message: buildWorkItemTaskMessage({ project, workItem, note }),
+      tokenHash: hashToken(confirmationToken),
+      createdAt: nowIso(),
+      expiresAt: new Date(Date.now() + PREVIEW_TTL_MS).toISOString(),
+    };
+    this.previews.set(preview.id, preview);
+    return { dispatch: publicPreview(preview), confirmationToken };
+  }
+
   async confirm({ dispatchId, confirmationToken, confirm }) {
     const preview = this.previews.get(dispatchId);
     if (!preview) throw new Error("Alice 派发预览不存在或已经失效");
@@ -223,6 +259,52 @@ class AliceCoordinator {
 
     const result = await this.sendMessage({ message: preview.message });
     const dispatchedAt = nowIso();
+    if (preview.workItemId) {
+      const dispatched = this.store.update((data) => {
+        const item = (data.workItems || []).find((record) => record.id === preview.workItemId);
+        const project = data.projects.find((record) => record.id === preview.projectId);
+        if (!item) throw new Error("工作项不存在");
+        const updated = updateWorkItem(
+          data,
+          item.id,
+          {
+            status: "in_progress",
+            assignee: { type: "agent", id: "alice", name: "Alice" },
+          },
+          { actor: { type: "system", name: "Nomos Dispatcher" } },
+        );
+        addComment(
+          data,
+          item.id,
+          `已派发给 Alice 协调处理。${String(result.content || "").slice(0, 500)}`,
+          { actor: { type: "agent", id: "alice", name: "Alice" } },
+        );
+        if (project) {
+          project.messages.push({
+            id: randomUUID(),
+            authorId: "project-steward",
+            authorName: "项目总管",
+            authorType: "cloud",
+            text: `已将工作项「${updated.title}」派发给 Alice 协调处理。`,
+            createdAt: dispatchedAt,
+          });
+          project.updatedAt = dispatchedAt;
+        }
+        this.store.audit("alice.workitem.dispatch", "派发工作项给 Alice MCP", {
+          projectId: preview.projectId,
+          workItemId: preview.workItemId,
+        });
+        return {
+          ...publicPreview(preview),
+          status: "dispatched",
+          dispatchedAt,
+          result: result.content || "",
+          workItem: updated,
+        };
+      });
+      this.previews.delete(dispatchId);
+      return dispatched;
+    }
     const dispatched = this.store.update((data) => {
       const project = data.projects.find((item) => item.id === preview.projectId);
       if (!project) throw new Error("项目不存在");
@@ -334,6 +416,7 @@ class AliceCoordinator {
 module.exports = {
   AliceCoordinator,
   buildTaskMessage,
+  buildWorkItemTaskMessage,
   getAliceConversationStatus,
   getAliceWorkspace,
   listAliceConversations,

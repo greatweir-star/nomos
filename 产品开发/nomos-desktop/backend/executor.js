@@ -1,13 +1,21 @@
 "use strict";
 
 const fs = require("node:fs");
-const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 const { spawn, execFileSync } = require("node:child_process");
 const { createHash, randomUUID } = require("node:crypto");
 const { buildAgentTaskEnvelope, markTaskDispatched, recordExecutionReceipt } = require("./workflow");
 const { routeKey } = require("./agent-router");
+const { updateWorkItem } = require("./work-items");
+const {
+  createDefaultAdapters,
+  findCommandCandidates,
+  findExecutable,
+  findNpmScript,
+  getOpenClawScript,
+  probeTcpPort,
+} = require("./local-agent-adapters");
 
 const MAX_OUTPUT_CHARS = 12000;
 const MAX_PROMPT_CHARS = 8000;
@@ -38,7 +46,7 @@ function trimOutput(value) {
 
 function readWorkspaceChanges(workspaceDir) {
   try {
-    return execFileSync("git.exe", ["-C", workspaceDir, "status", "--short", "--untracked-files=all"], {
+    return execFileSync("git", ["-C", workspaceDir, "status", "--short", "--untracked-files=all"], {
       encoding: "utf8",
       windowsHide: true,
       timeout: 5000,
@@ -59,242 +67,15 @@ function diffWorkspaceChanges(before, after) {
   return (after || []).filter((item) => !previous.has(item));
 }
 
-function findCommandCandidates(command) {
-  try {
-    const output = execFileSync("where.exe", [command], {
-      encoding: "utf8",
-      windowsHide: true,
-      timeout: 5000,
-    });
-    const candidates = output
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-    return candidates;
-  } catch {
-    return [];
-  }
-}
-
-function findExecutable(command) {
-  return findCommandCandidates(command).find((candidate) => path.extname(candidate).toLowerCase() === ".exe") || null;
-}
-
-function findNpmScript(command, packageScript) {
-  for (const candidate of findCommandCandidates(command)) {
-    if (path.extname(candidate).toLowerCase() !== ".cmd") continue;
-    const scriptPath = path.join(path.dirname(candidate), "node_modules", ...packageScript);
-    if (fs.existsSync(scriptPath) && fs.statSync(scriptPath).isFile()) return scriptPath;
-  }
-  return null;
-}
-
-function resolveCommandEntry(command, packageScript = null) {
-  const normalized = String(command || "").trim();
-  if (!normalized) return null;
-  if (path.isAbsolute(normalized)) {
-    return fs.existsSync(normalized) && fs.statSync(normalized).isFile() ? normalized : null;
-  }
-  return (packageScript ? findNpmScript(normalized, packageScript) : null) || findExecutable(normalized);
-}
-
-function readJsonFile(filePath) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-function getAliceDataDir() {
-  const pointer = readJsonFile(path.join(os.homedir(), ".alice-pointer.json"));
-  return pointer?.dataDir || "D:\\Alice\\AliceData";
-}
-
-function getAliceConnection() {
-  const cliDir = path.join(getAliceDataDir(), "cli");
-  const config = readJsonFile(path.join(cliDir, "config.json"));
-  return {
-    cliDir,
-    cliPath: path.join(cliDir, "alice-cli.cmd"),
-    cliScriptPath: path.join(cliDir, "alice-cli.js"),
-    config,
-  };
-}
-
-async function probeAliceMcp(config) {
-  if (!config?.serverUrl || !config?.token) return false;
-  try {
-    const response = await fetch(config.serverUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        Accept: "application/json, text/event-stream",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-03-26",
-          capabilities: {},
-          clientInfo: { name: "nomos", version: "0.4.0" },
-        },
-      }),
-      signal: AbortSignal.timeout(2500),
-    });
-    const text = await response.text();
-    return response.ok && text.includes('"name":"alice"');
-  } catch {
-    return false;
-  }
-}
-
-function probeTcpPort(port) {
-  return new Promise((resolve) => {
-    const socket = net.createConnection({ host: "127.0.0.1", port });
-    const settle = (connected) => {
-      socket.destroy();
-      resolve(connected);
-    };
-    socket.setTimeout(1000);
-    socket.once("connect", () => settle(true));
-    socket.once("error", () => settle(false));
-    socket.once("timeout", () => settle(false));
-  });
-}
-
-function getOpenClawScript() {
-  return findNpmScript("openclaw", ["@qingchencloud", "openclaw-zh", "openclaw.mjs"]) || findExecutable("openclaw");
-}
-
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function createDefaultAdapters() {
-  return {
-    alice: {
-      name: "Alice",
-      command: "alice-cli",
-      connectorType: "MCP",
-      supportsExecution: false,
-      supportsDispatch: true,
-      dispatchMode: "mcp-message",
-      receiptMode: "manual-sync",
-      resolveExecutable() {
-        const connection = getAliceConnection();
-        return fs.existsSync(connection.cliPath) && fs.existsSync(connection.cliScriptPath)
-          ? connection.cliPath
-          : null;
-      },
-      async inspect() {
-        const connection = getAliceConnection();
-        const cliInstalled = fs.existsSync(connection.cliPath);
-        const cliReady = cliInstalled && fs.existsSync(connection.cliScriptPath);
-        const connected = await probeAliceMcp(connection.config);
-        return {
-          installed: Boolean(connection.config || cliInstalled),
-          executable: cliReady ? connection.cliPath : null,
-          supportsExecution: false,
-          connectionStatus: connected ? "connected" : "offline",
-          statusLabel: connected ? "MCP 已连接" : "Alice 未运行",
-          detail: connected
-            ? cliReady
-              ? "Alice MCP 在线，alice-cli 可用"
-              : "Alice MCP 在线，CLI 包装脚本需要修复"
-            : "启动 Alice 桌面端后可连接",
-          endpoint: connection.config?.serverUrl || null,
-        };
-      },
-    },
-    "codex-cli": {
-      name: "Codex CLI",
-      command: "codex",
-      connectorType: "CLI",
-      supportsDispatch: true,
-      dispatchMode: "local-process",
-      receiptMode: "process-exit",
-      resolveExecutable: (command = "codex") => resolveCommandEntry(command, ["@openai", "codex", "bin", "codex.js"]),
-      buildInvocation({ executable, mode, workspaceDir }) {
-        const args = [
-          "exec",
-          "--sandbox",
-          mode,
-          "--skip-git-repo-check",
-          "--ephemeral",
-          "--ignore-user-config",
-          "--color",
-          "never",
-          "-C",
-          workspaceDir,
-          "-",
-        ];
-        return {
-          command: path.extname(executable).toLowerCase() === ".js" ? process.execPath : executable,
-          args: path.extname(executable).toLowerCase() === ".js" ? [executable, ...args] : args,
-        };
-      },
-    },
-    "claude-code": {
-      name: "Claude Code",
-      command: "claude",
-      connectorType: "CLI",
-      supportsDispatch: true,
-      dispatchMode: "local-process",
-      receiptMode: "process-exit",
-      resolveExecutable: (command = "claude") => resolveCommandEntry(command),
-      buildInvocation({ executable, mode }) {
-        return {
-          command: executable,
-          args: [
-            "--print",
-            "--output-format",
-            "text",
-            "--no-session-persistence",
-            "--permission-mode",
-            mode === "workspace-write" ? "acceptEdits" : "plan",
-          ],
-        };
-      },
-    },
-    openclaw: {
-      name: "OpenClaw",
-      command: "openclaw",
-      connectorType: "Gateway",
-      supportsExecution: false,
-      supportsDispatch: false,
-      dispatchMode: "gateway",
-      receiptMode: "gateway-event",
-      resolveExecutable: () => getOpenClawScript(),
-      async inspect() {
-        const executable = getOpenClawScript();
-        const configured = fs.existsSync(path.join(os.homedir(), ".openclaw", "openclaw.json"));
-        const gatewayOnline = await probeTcpPort(18789);
-        return {
-          installed: Boolean(executable || findCommandCandidates("openclaw").length),
-          executable,
-          supportsExecution: false,
-          connectionStatus: gatewayOnline ? "connected" : configured ? "offline" : "setup_required",
-          statusLabel: gatewayOnline ? "网关已连接" : configured ? "网关未启动" : "待网关配置",
-          detail: gatewayOnline
-            ? "OpenClaw 本地网关在线"
-            : configured
-              ? "点击后可启动本地网关"
-              : "确认风险声明后，可由 nomos 初始化并启动网关",
-          endpoint: "ws://127.0.0.1:18789",
-        };
-      },
-    },
-  };
 }
 
 class ExecutionManager {
   constructor({
     store,
     adapters = createDefaultAdapters(),
-    allowedRoots = [os.homedir(), "D:\\CodexOutputs"],
+    allowedRoots = [os.homedir(), process.platform === "win32" ? "D:\\CodexOutputs" : path.join(os.homedir(), "CodexOutputs")],
     timeoutMs = DEFAULT_TIMEOUT_MS,
   }) {
     this.store = store;
@@ -349,7 +130,11 @@ class ExecutionManager {
         supportsExecution,
         connectionStatus: supportsExecution ? "connected" : installed ? "discovered" : "unavailable",
         statusLabel: supportsExecution ? "已连接" : installed ? "已发现" : "未安装",
-        detail: supportsExecution ? "可派发本地任务" : installed ? "已发现命令入口" : "没有发现本地命令入口",
+        detail: supportsExecution
+          ? adapter.describeConnection?.({ supportsExecution, executable }) || "可派发本地任务"
+          : installed
+            ? "已发现命令入口"
+            : "没有发现本地命令入口",
       };
     }));
     this.toolsCache = tools;
@@ -358,7 +143,7 @@ class ExecutionManager {
   }
 
   isConfigurableAdapter(agentId) {
-    return ["codex-cli", "claude-code"].includes(agentId);
+    return ["codex-cli", "claude-code", "kimi-cli"].includes(agentId);
   }
 
   getConfiguredCommand(agentId) {
@@ -551,7 +336,7 @@ class ExecutionManager {
     });
   }
 
-  preview({ projectId, agentId, mode, prompt, workspaceDir, stageKey, agentRoute }) {
+  preview({ projectId, agentId, mode, prompt, workspaceDir, stageKey, agentRoute, workItemId = null, workItemTitle = "" }) {
     const adapter = this.adapters[agentId];
     if (!adapter) throw new Error("暂不支持该本地 Agent");
     if (adapter.supportsExecution === false) throw new Error(`${adapter.name} 已接入，但暂未开放受控任务执行`);
@@ -580,8 +365,10 @@ class ExecutionManager {
     const token = randomUUID();
     const now = new Date().toISOString();
     const project = this.store.snapshot().projects.find((item) => item.id === projectId);
-    const activeStage = project?.stages.find((item) => item.key === stageKey)
-      || project?.stages.find((item) => ["in_progress", "blocked"].includes(item.status) && item.ownerType === "local");
+    const activeStage = workItemId
+      ? null
+      : project?.stages.find((item) => item.key === stageKey)
+        || project?.stages.find((item) => ["in_progress", "blocked"].includes(item.status) && item.ownerType === "local");
     const envelope = activeStage ? buildAgentTaskEnvelope(project, activeStage.key) : null;
     const execution = {
       id: randomUUID(),
@@ -602,6 +389,8 @@ class ExecutionManager {
       taskId: envelope?.taskId || null,
       workspaceChangesBefore: readWorkspaceChanges(normalizedWorkspace),
       routeReason: String(agentRoute?.reason || "").trim(),
+      workItemId: workItemId || null,
+      workItemTitle: String(workItemTitle || "").trim().slice(0, 200),
     };
 
     this.store.update((data) => {
@@ -654,6 +443,17 @@ class ExecutionManager {
       target.startedAt = new Date().toISOString();
       target.updatedAt = target.startedAt;
       const project = data.projects.find((item) => item.id === target.projectId);
+      if (target.workItemId) {
+        updateWorkItem(
+          data,
+          target.workItemId,
+          {
+            status: "in_progress",
+            assignee: { type: "agent", id: target.agentId, name: target.agentName },
+          },
+          { actor: { type: "system", name: "Nomos Dispatcher" } },
+        );
+      }
       if (project && target.taskId) {
         markTaskDispatched(project, {
           taskId: target.taskId,
@@ -758,6 +558,21 @@ class ExecutionManager {
           }
           project.updatedAt = target.finishedAt;
         }
+        if (target.workItemId && !interrupted) {
+          updateWorkItem(
+            data,
+            target.workItemId,
+            succeeded
+              ? { status: "review_pending", progress: 90 }
+              : cancelled
+                ? { status: "todo", progress: 0 }
+                : {
+                    status: "blocked",
+                    blockedReason: target.errorOutput.slice(0, 1000) || "Agent 执行失败，请查看执行记录",
+                  },
+            { actor: { type: "agent", id: target.agentId, name: target.agentName } },
+          );
+        }
         if (!interrupted) {
           this.store.audit(
             cancelled ? "execution.cancel" : succeeded ? "execution.succeed" : "execution.fail",
@@ -814,6 +629,8 @@ class ExecutionManager {
       mode: execution.mode,
       prompt: execution.prompt,
       workspaceDir: execution.workspaceDir,
+      workItemId: execution.workItemId,
+      workItemTitle: execution.workItemTitle,
     });
   }
 

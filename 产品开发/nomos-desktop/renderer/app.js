@@ -309,6 +309,15 @@ const api = {
   cancelWorkItem(id) {
     return this.request(`/api/work-items/${id}/cancel`, { method: "POST" });
   },
+  workItemAgentRoute(id, agentId = "") {
+    return this.request(`/api/work-items/${id}/agent-route?agentId=${encodeURIComponent(agentId)}`);
+  },
+  previewWorkItemDispatch(id, payload) {
+    return this.request(`/api/work-items/${id}/dispatch/preview`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
   syncLegacyWorkItems(projectId = "") {
     return this.request("/api/work-items/sync-legacy", {
       method: "POST",
@@ -3018,6 +3027,7 @@ function renderWorkItemRow(item) {
       </div>
       <span class="workitem-status ${statusClass}">${WORK_ITEM_STATUS_LABELS[item.status] || item.status}</span>
       <div class="workitem-actions">
+        ${!["done", "cancelled", "review_pending"].includes(item.status) ? `<button class="button tiny primary" type="button" data-workitem-dispatch="${escapeHtml(item.id)}">派发</button>` : ""}
         ${item.status !== "in_progress" && item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny" type="button" data-workitem-status="${escapeHtml(item.id)}|in_progress">开始</button>` : ""}
         ${item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny primary" type="button" data-workitem-status="${escapeHtml(item.id)}|done">完成</button>` : ""}
         ${item.status !== "blocked" && item.status !== "done" && item.status !== "cancelled" ? `<button class="button tiny" type="button" data-workitem-status="${escapeHtml(item.id)}|blocked">阻塞</button>` : ""}
@@ -3027,6 +3037,9 @@ function renderWorkItemRow(item) {
 }
 
 function bindWorkItemActions(container) {
+  container.querySelectorAll("[data-workitem-dispatch]").forEach((button) =>
+    button.addEventListener("click", () => run(() => dispatchWorkItem(button.dataset.workitemDispatch))),
+  );
   container.querySelectorAll("[data-workitem-status]").forEach((button) =>
     button.addEventListener("click", () =>
       run(async () => {
@@ -3055,6 +3068,70 @@ function bindWorkItemActions(container) {
       }),
     ),
   );
+}
+
+function defaultDispatchWorkspace() {
+  return state.project?.workspaceDir || state.workspace?.bridge?.allowedWorkspaces?.[0] || "";
+}
+
+async function dispatchWorkItem(workItemId) {
+  const item = (state.workbenchData?.items || []).find((record) => record.id === workItemId);
+  const route = await api.workItemAgentRoute(workItemId);
+  const candidateOptions = (route.candidates || [route.selectedAgent]).map((agent) => ({
+    value: agent.id,
+    label: `${agent.name} / ${agent.connectorType} / ${agent.supportsExecution ? "本地执行" : "协作派发"}`,
+  }));
+  const values = await openActionModal({
+    title: "派发工作项",
+    description: item ? `${item.title}\n${route.reason}` : route.reason,
+    fields: [
+      { name: "agentId", label: "目标 Agent", type: "select", value: route.selectedAgent.id, options: candidateOptions },
+      { name: "mode", label: "权限模式", type: "select", value: "read-only", options: [
+        { value: "read-only", label: "只读分析" },
+        { value: "workspace-write", label: "允许写入工作目录" },
+      ] },
+      { name: "workspaceDir", label: "本地工作目录", value: defaultDispatchWorkspace(), required: false },
+      { name: "note", label: "补充说明", type: "textarea", required: false },
+    ],
+    confirmLabel: "生成预览",
+  });
+  if (!values) return;
+  const payload = {
+    agentId: values.agentId,
+    mode: values.mode || "read-only",
+    workspaceDir: values.workspaceDir,
+    note: values.note,
+  };
+  let preview;
+  try {
+    preview = await api.previewWorkItemDispatch(workItemId, payload);
+  } catch (error) {
+    if (error.message !== "工作目录不在允许范围内") throw error;
+    const approved = await askConfirm(`该目录尚未授权：\n${payload.workspaceDir}\n\n确认允许本地 Agent 访问这个目录吗？`, {
+      title: "授权本地目录",
+      confirmLabel: "允许访问",
+    });
+    if (!approved) return;
+    await api.allowWorkspace(payload.workspaceDir);
+    preview = await api.previewWorkItemDispatch(workItemId, payload);
+  }
+
+  if (preview.kind === "alice-dispatch") {
+    if (!(await askConfirm(`即将把以下内容发送给本机 Alice MCP：\n\n${preview.dispatch.message}`, {
+      title: "确认派发给 Alice",
+      confirmLabel: "确认派发",
+    }))) return;
+    await api.confirmAliceDispatch(preview.dispatch.id, preview.confirmationToken);
+    await loadWorkspace(state.project.id);
+    await loadWorkbenchData();
+    renderWorkbenchPage();
+    showToast("工作项已派发给 Alice");
+    return;
+  }
+
+  await confirmExecutionPreview(preview);
+  await loadWorkbenchData();
+  renderWorkbenchPage();
 }
 
 function renderProgressDashboard(container) {
@@ -3777,7 +3854,7 @@ async function confirmExecutionPreview(preview) {
   }
   await api.confirmExecution(execution.id, preview.confirmationToken, mode === "workspace-write");
   await loadWorkspace(state.project.id);
-    showToast("\u5458\u5de5\u522b\u540d\u548c\u672c\u5730\u914d\u5bf9\u4fe1\u606f\u5df2\u4fdd\u5b58");
+  showToast("本地任务已开始执行");
 }
 
 function scheduleExecutionRefresh() {

@@ -10,7 +10,7 @@ const { createProject, createDefaultOrgData, ROLE_FAMILY_DEFAULTS } = require(".
 const { ExecutionManager } = require("./executor");
 const { DeploymentManager } = require("./deployment");
 const { AliceCoordinator } = require("./alice");
-const { resolveAgentRoute } = require("./agent-router");
+const { resolveAgentRoute, resolveWorkItemRoute } = require("./agent-router");
 const { createAdapterDirectory, enrichAgents } = require("./agent-registry");
 const {
   addStageDeliverable,
@@ -130,6 +130,29 @@ function snapshotWithLegacyWorkItems(store, projectId = null) {
     syncLegacyWorkItems(draft, { projectId });
     return draft;
   });
+}
+
+function findDecoratedWorkItem(data, workItemId) {
+  const item = (data.workItems || []).find((record) => record.id === workItemId);
+  return item ? decorateWorkItem(data, item) : null;
+}
+
+function buildWorkItemDispatchPrompt(project, workItem, route, note = "") {
+  return [
+    "Nomos 工作项派发",
+    `项目：${project?.title || workItem.projectTitle || workItem.projectId}`,
+    project?.goal ? `项目目标：${project.goal}` : "",
+    `工作项：${workItem.title}`,
+    workItem.description ? `任务描述：${workItem.description}` : "",
+    workItem.acceptanceCriteria ? `验收标准：${workItem.acceptanceCriteria}` : "",
+    workItem.dueAt ? `截止时间：${workItem.dueAt}` : "",
+    `推荐路由：${route.selectedAgent.name}（${route.reason}）`,
+    note ? `补充说明：${note}` : "",
+    "请完成该工作项，并在输出中包含：完成情况、关键改动或结论、验证结果、遗留风险。",
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 8000);
 }
 
 function projectsReferencingFlow(data, flowId) {
@@ -371,12 +394,86 @@ function createRequestHandler({ store, rendererDir, executionManager, aliceCoord
 
       if (segments[1] === "work-items" && segments[2] && request.method === "GET" && segments.length === 3) {
         const data = snapshotWithLegacyWorkItems(store);
-        const item = filterWorkItems(data, {}).find((record) => record.id === segments[2]);
+        const item = findDecoratedWorkItem(data, segments[2]);
         if (!item) {
           sendError(response, 404, "工作项不存在");
           return;
         }
-        sendJson(response, 200, { data: decorateWorkItem(data, item) });
+        sendJson(response, 200, { data: item });
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "agent-route" && request.method === "GET") {
+        const data = snapshotWithLegacyWorkItems(store);
+        const item = findDecoratedWorkItem(data, segments[2]);
+        if (!item) {
+          sendError(response, 404, "工作项不存在");
+          return;
+        }
+        try {
+          const tools = createAdapterDirectory({
+            localTools: await executionManager.listTools(),
+            adapterConfigs: data.agentAdapters,
+          });
+          sendJson(response, 200, resolveWorkItemRoute({
+            workItem: item,
+            project: findProject(data, item.projectId),
+            tools,
+            requestedAgentId: url.searchParams.get("agentId"),
+          }));
+        } catch (error) {
+          sendError(response, 400, error.message);
+        }
+        return;
+      }
+
+      if (segments[1] === "work-items" && segments[2] && segments[3] === "dispatch" && segments[4] === "preview" && request.method === "POST") {
+        const body = await readJson(request);
+        const data = snapshotWithLegacyWorkItems(store);
+        const item = findDecoratedWorkItem(data, segments[2]);
+        if (!item) {
+          sendError(response, 404, "工作项不存在");
+          return;
+        }
+        const project = findProject(data, item.projectId);
+        try {
+          const tools = createAdapterDirectory({
+            localTools: await executionManager.listTools(),
+            adapterConfigs: data.agentAdapters,
+          });
+          const route = resolveWorkItemRoute({
+            workItem: item,
+            project,
+            tools,
+            requestedAgentId: body.agentId,
+          });
+          if (route.selectedAgent.id === "alice") {
+            const preview = aliceCoordinator.previewWorkItem({
+              workItem: item,
+              project,
+              note: body.note,
+            });
+            sendJson(response, 201, { kind: "alice-dispatch", route, ...preview });
+            return;
+          }
+          if (!route.selectedAgent.supportsExecution) {
+            sendError(response, 400, `${route.selectedAgent.name} 暂不支持工作项自动派发`);
+            return;
+          }
+          const preview = executionManager.preview({
+            projectId: item.projectId,
+            workItemId: item.id,
+            workItemTitle: item.title,
+            agentId: route.selectedAgent.id,
+            mode: body.mode || "read-only",
+            workspaceDir: body.workspaceDir || project?.workspaceDir,
+            prompt: body.prompt || buildWorkItemDispatchPrompt(project, item, route, body.note),
+            agentRoute: route,
+          });
+          sendJson(response, 201, { kind: "execution", route, ...preview });
+        } catch (error) {
+          sendError(response, 400, error.message);
+        }
         return;
       }
 

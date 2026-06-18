@@ -1,5 +1,41 @@
 # Nomos 开发进度记录
 
+## v1.4.0 — Agent Adapter 与工作项派发起步
+
+### 开发周期
+
+- 起止：2026-06-18
+- 对应规划：`产品规划/04-详细规划/V1_4_AGENT_DISPATCH_AND_COLLABORATION.md`
+
+### 各模块完成状态
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| Agent Adapter 合同 | 已完成 | 新增 `backend/local-agent-adapters.js`，将本机工具发现、默认命令、连接探测和 CLI 调用构造从执行管理器中拆出 |
+| macOS 本机工具发现 | 已完成 | 本地命令探测从 `where.exe` 扩展为 Windows/macOS 通用逻辑，`git` 状态读取改为跨平台命令 |
+| Kimi 本机适配器 | 已完成 | 新增 Kimi 技术适配器与硅基员工模板，支持命令检测、配置覆盖和本地执行派发 |
+| 工作项路由 | 已完成 | 新增 `resolveWorkItemRoute()`，按工作项标题、描述、验收标准推断 `code/review/research/content/coordination` 意图并推荐 Agent |
+| 工作项派发预览 | 已完成 | 新增 `GET /api/work-items/:id/agent-route` 与 `POST /api/work-items/:id/dispatch/preview` |
+| CLI 工作项执行 | 已完成 | Codex CLI、Claude Code、Kimi 复用本地执行预览/确认/取消/重试链路，执行开始和结束会回写工作项负责人、状态和进度 |
+| Alice 工作项协作 | 已完成 | Alice 支持工作项协作消息预览和显式确认，确认后写入工作项事件与项目消息 |
+| 工作台派发入口 | 已完成 | 工作项列表新增“派发”动作，可选择 Agent、权限模式、工作目录和补充说明 |
+| 自动化测试 | 已完成 | 新增 Kimi 工作项执行派发和 Alice 工作项协作派发测试，全量 Node 测试通过 |
+
+### 关键决策
+
+1. **保留旧 bridge API，内部先接口化**：对外继续兼容 `/api/bridge`、`/api/executions` 和 Alice 派发接口；对内先把本机 Agent 细节收敛到 Adapter 注册表，避免前端和测试大面积震动。
+2. **工作项派发不复用阶段任务信封**：从工作项发起的 CLI 执行不会自动绑定当前项目阶段，避免在代码开发阶段误污染阶段级 `workflowTasks`。
+3. **Kimi 作为本机长上下文分析员接入**：默认命令为 `kimi`，可在桥接设置中覆盖命令入口；具体 CLI 参数后续可继续通过 Adapter 实现细化。
+4. **Alice 工作项派发先走协作消息**：本轮不强行把工作项转换为阶段任务，只记录协作派发事实、工作项状态和项目消息，为后续工作项级回执同步预留空间。
+
+### 下一步
+
+- 将工作项派发记录沉淀为独立 `agentDispatches[]`，补充幂等、重试和回执聚合视图。
+- 为 Kimi 增加可配置 invocation 模板，以适配不同本机 Kimi CLI 形态。
+- 在工作项详情中展示派发历史、执行记录和 Alice 会话同步入口。
+
+---
+
 ## v1.3.0 — 工作项与进度资源看板版
 
 ### 开发周期
