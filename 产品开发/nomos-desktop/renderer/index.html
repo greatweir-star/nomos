@@ -5726,6 +5726,18 @@
         background: linear-gradient(135deg, rgba(23, 92, 76, 0.95), rgba(19, 65, 61, 0.8));
       }
 
+      body[data-design-theme="apple"] .rail-tab:focus-visible {
+        outline: 1px solid rgba(255, 255, 255, 0.42);
+        outline-offset: 2px;
+      }
+
+      body[data-design-theme="apple"] .rail-divider {
+        width: 36px;
+        height: 1px;
+        margin: 2px auto;
+        background: rgba(255, 255, 255, 0.12);
+      }
+
       body[data-design-theme="apple"] .avatar {
         width: 34px;
         height: 34px;
@@ -7045,29 +7057,27 @@
             <svg class="icon"><use href="#icon-grid"></use></svg>
             <span>控制台</span>
           </button>
-          <button class="rail-tab" title="项目" data-rail-action="overview" aria-label="项目">
+          <button class="rail-tab" title="组织通讯录" data-rail-action="organization" aria-label="组织通讯录">
+            <svg class="icon"><use href="#icon-users"></use></svg>
+            <span>通讯录</span>
+          </button>
+          <button class="rail-tab" title="流程编排" data-rail-action="workflow" aria-label="流程编排">
+            <svg class="icon"><use href="#icon-flow"></use></svg>
+            <span>流程</span>
+          </button>
+          <div class="rail-divider" aria-hidden="true"></div>
+          <button class="rail-tab" title="派发队列" data-rail-action="workbench" aria-label="派发队列">
+            <svg class="icon"><use href="#icon-arrow"></use></svg>
+            <span>派发</span>
+          </button>
+          <button class="rail-tab" title="项目总览" data-rail-action="overview" aria-label="项目总览">
             <svg class="icon"><use href="#icon-book"></use></svg>
             <span>项目</span>
           </button>
-          <button class="rail-tab" title="话题" data-rail-action="topics" aria-label="话题">
-            <svg class="icon"><use href="#icon-message"></use></svg>
-            <span>话题</span>
-          </button>
-          <button class="rail-tab" title="工作流编排" data-rail-action="workflow" aria-label="工作流编排">
-            <svg class="icon"><use href="#icon-flow"></use></svg>
-            <span>编排</span>
-          </button>
-          <button class="rail-tab" title="工作台" data-rail-action="workbench" aria-label="工作台">
-            <svg class="icon"><use href="#icon-grid"></use></svg>
-            <span>工作台</span>
-          </button>
-          <button class="rail-tab" title="组织" data-rail-action="organization" aria-label="组织">
-            <svg class="icon"><use href="#icon-users"></use></svg>
-            <span>组织</span>
-          </button>
-          <button class="rail-tab" title="流程" data-rail-action="flow" aria-label="流程">
-            <svg class="icon"><use href="#icon-flow"></use></svg>
-            <span>流程</span>
+          <div class="rail-divider" aria-hidden="true"></div>
+          <button class="rail-tab" title="智能体集成" data-rail-action="integrations" aria-label="智能体集成">
+            <svg class="icon"><use href="#icon-link"></use></svg>
+            <span>集成</span>
           </button>
           <button class="rail-tab" title="设置" data-rail-action="settings" aria-label="设置">
             <svg class="icon"><use href="#icon-settings"></use></svg>

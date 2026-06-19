@@ -4385,6 +4385,10 @@ function renderActiveTab() {
   else if (!state.project) appShell.classList.add("workspace-empty");
   renderWorkspace();
   const isOverview = state.activeTab === "overview";
+  if (isOverview && !state.project) {
+    renderEmptyWorkspace();
+    return;
+  }
   overviewPanel.style.display = isOverview ? "block" : "none";
   emptyPanel.style.display = isOverview ? "none" : "block";
   if (isOverview) {
@@ -4892,6 +4896,11 @@ document.querySelector(".rail").addEventListener("click", (event) => {
   const button = event.target.closest("[data-rail-action]");
   if (!button) return;
   const action = button.dataset.railAction;
+  if (action === "integrations") {
+    toggleBridgeModal(true);
+    run(renderBridge);
+    return;
+  }
   activateTab(action);
 });
 

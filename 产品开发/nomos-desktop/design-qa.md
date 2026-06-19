@@ -17,8 +17,8 @@ viewport:
 
 state:
 - Dashboard: default Nomos console.
-- Organization: rail tab "组织" selected, first employee selected in right inspector.
-- Workflow: rail tab "编排" selected, "03 竞品调研" selected in right inspector.
+- Organization: rail tab "通讯录" selected, first employee selected in right inspector.
+- Workflow: rail tab "流程" selected, "03 竞品调研" selected in right inspector.
 
 full-view comparison evidence:
 - The implementation was opened at http://127.0.0.1:4174 and captured with local Chrome through Playwright because the Browser tool was unavailable and Computer Use could not access the Codex app window.
@@ -39,6 +39,7 @@ patches made since previous QA pass:
 - Converted the organization view from card directory to dense table plus right detail inspector.
 - Converted workflow orchestration to a template sidebar, canvas editor, node inspector, and validation panel.
 - Fixed compact status labels so receipt states no longer stack vertically.
+- Simplified the primary rail into clear product areas: 控制台, 通讯录, 流程, 派发, 项目, 集成, 设置. Removed duplicate/ambiguous 话题 and 流程 entries from the first-level navigation.
 
 verification:
 - node --check renderer/app.js passed.
