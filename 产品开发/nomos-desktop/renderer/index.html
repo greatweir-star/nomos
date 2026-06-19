@@ -7046,6 +7046,349 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* Apple refinement pass: quieter material, softer geometry, native-feeling controls. */
+      body[data-design-theme="apple"] {
+        --console-bg: #f5f5f7;
+        --console-sidebar: rgba(246, 246, 248, 0.88);
+        --console-rail: #111417;
+        --console-rail-2: #192124;
+        --console-text: #1d1d1f;
+        --console-muted: #6e6e73;
+        --console-line: rgba(0, 0, 0, 0.105);
+        --console-line-soft: rgba(0, 0, 0, 0.058);
+        --console-green: #14775c;
+        --console-green-soft: rgba(20, 119, 92, 0.11);
+        --console-blue-soft: rgba(0, 122, 255, 0.12);
+        --console-orange: #bf6a02;
+        --console-orange-soft: rgba(255, 149, 0, 0.14);
+        --console-red: #d92d20;
+        --console-red-soft: rgba(255, 59, 48, 0.12);
+        --console-shadow: 0 16px 42px rgba(0, 0, 0, 0.075);
+        --console-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.055);
+        color: var(--console-text);
+        background: var(--console-bg);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body[data-design-theme="apple"] .app-shell,
+      body[data-design-theme="apple"] .app-shell.surface-dashboard {
+        background: var(--console-bg);
+      }
+
+      body[data-design-theme="apple"] .rail {
+        background:
+          linear-gradient(180deg, rgba(38, 48, 52, 0.98), rgba(12, 16, 18, 0.98)),
+          var(--console-rail);
+        box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+      }
+
+      body[data-design-theme="apple"] .brand-mark {
+        border-radius: 5px;
+        background: linear-gradient(180deg, #ffffff, #ebe8df);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+      }
+
+      body[data-design-theme="apple"] .rail-tab {
+        border-radius: 12px;
+        color: rgba(242, 242, 247, 0.62);
+        transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+      }
+
+      body[data-design-theme="apple"] .rail-tab:hover,
+      body[data-design-theme="apple"] .rail-tab.active {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      }
+
+      body[data-design-theme="apple"] .rail-tab.active {
+        background:
+          linear-gradient(180deg, rgba(42, 125, 103, 0.82), rgba(22, 79, 67, 0.78));
+      }
+
+      body[data-design-theme="apple"] .workspace,
+      body[data-design-theme="apple"] .inspector {
+        background: var(--console-sidebar);
+        backdrop-filter: blur(28px) saturate(1.5);
+      }
+
+      body[data-design-theme="apple"] .workspace {
+        border-right: 1px solid var(--console-line);
+      }
+
+      body[data-design-theme="apple"] .inspector {
+        border-left: 1px solid var(--console-line);
+      }
+
+      body[data-design-theme="apple"] .workspace-head {
+        min-height: 76px;
+      }
+
+      body[data-design-theme="apple"] .workspace-name,
+      body[data-design-theme="apple"] .console-topbar h2,
+      body[data-design-theme="apple"] .panel-head h3,
+      body[data-design-theme="apple"] .profile-topline h3,
+      body[data-design-theme="apple"] .flow-node-inspector strong {
+        color: var(--console-text);
+        font-weight: 700;
+      }
+
+      body[data-design-theme="apple"] .side-command {
+        border-radius: 10px;
+        color: #2b312e;
+        font-weight: 650;
+        transition: background 140ms ease, box-shadow 140ms ease;
+      }
+
+      body[data-design-theme="apple"] .side-command.active,
+      body[data-design-theme="apple"] .side-command:hover {
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+      }
+
+      body[data-design-theme="apple"] .project-search,
+      body[data-design-theme="apple"] .top-search,
+      body[data-design-theme="apple"] .panel-search,
+      body[data-design-theme="apple"] .directory-search,
+      body[data-design-theme="apple"] .form-field input,
+      body[data-design-theme="apple"] .form-field textarea,
+      body[data-design-theme="apple"] .form-field select,
+      body[data-design-theme="apple"] .execution-select {
+        border-radius: 9px;
+        border-color: rgba(0, 0, 0, 0.12);
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      }
+
+      body[data-design-theme="apple"] .side-health,
+      body[data-design-theme="apple"] .flow-template-card,
+      body[data-design-theme="apple"] .metric-card,
+      body[data-design-theme="apple"] .control-panel,
+      body[data-design-theme="apple"] .people-stat,
+      body[data-design-theme="apple"] .directory-shell,
+      body[data-design-theme="apple"] .cockpit-hero,
+      body[data-design-theme="apple"] .cockpit-panel,
+      body[data-design-theme="apple"] .orchestration-shell,
+      body[data-design-theme="apple"] .adapter-card,
+      body[data-design-theme="apple"] .policy-grid,
+      body[data-design-theme="apple"] .mini-work-list article,
+      body[data-design-theme="apple"] .receipt-list,
+      body[data-design-theme="apple"] .validation-panel {
+        border-color: var(--console-line-soft);
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: var(--console-shadow-soft);
+      }
+
+      body[data-design-theme="apple"] .surface-app .empty-panel,
+      body[data-design-theme="apple"] .main,
+      body[data-design-theme="apple"] .board {
+        background: var(--console-bg);
+      }
+
+      body[data-design-theme="apple"] .console-topbar {
+        min-height: 76px;
+        border-bottom-color: var(--console-line-soft);
+        background: rgba(255, 255, 255, 0.78);
+        backdrop-filter: blur(24px) saturate(1.45);
+      }
+
+      body[data-design-theme="apple"] .console-topbar h2 {
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      body[data-design-theme="apple"] .button,
+      body[data-design-theme="apple"] .compact-table button,
+      body[data-design-theme="apple"] .panel-link,
+      body[data-design-theme="apple"] .tool,
+      body[data-design-theme="apple"] .pager {
+        min-height: 32px;
+        border-radius: 9px;
+        border-color: rgba(0, 0, 0, 0.12);
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      body[data-design-theme="apple"] .button:hover,
+      body[data-design-theme="apple"] .compact-table button:hover,
+      body[data-design-theme="apple"] .panel-link:hover,
+      body[data-design-theme="apple"] .tool:hover,
+      body[data-design-theme="apple"] .pager:hover {
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+      }
+
+      body[data-design-theme="apple"] .button.primary,
+      body[data-design-theme="apple"] .button.dark {
+        border-color: #0f614c;
+        background: linear-gradient(180deg, #19795f, #0c5847);
+        box-shadow: 0 8px 18px rgba(20, 119, 92, 0.18);
+      }
+
+      body[data-design-theme="apple"] .metric-strip {
+        gap: 14px;
+        padding: 20px 26px 16px;
+      }
+
+      body[data-design-theme="apple"] .metric-card {
+        min-height: 104px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.78));
+      }
+
+      body[data-design-theme="apple"] .metric-card i {
+        width: 44px;
+        height: 44px;
+        box-shadow: inset 0 0 0 1px rgba(20, 119, 92, 0.08);
+      }
+
+      body[data-design-theme="apple"] .control-grid {
+        gap: 14px;
+      }
+
+      body[data-design-theme="apple"] .mini-flow {
+        grid-template-columns: repeat(5, minmax(58px, 1fr));
+        gap: 14px;
+        padding: 24px 14px;
+      }
+
+      body[data-design-theme="apple"] .mini-flow button {
+        min-height: 106px;
+        padding: 10px 7px;
+        border-color: var(--console-line-soft);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.86);
+      }
+
+      body[data-design-theme="apple"] .mini-flow button:not(:last-child)::after {
+        right: -12px;
+        width: 10px;
+      }
+
+      body[data-design-theme="apple"] .control-panel {
+        overflow: hidden;
+      }
+
+      body[data-design-theme="apple"] .panel-head,
+      body[data-design-theme="apple"] .people-table-head,
+      body[data-design-theme="apple"] .validation-head {
+        border-bottom-color: var(--console-line-soft);
+        background: rgba(250, 250, 252, 0.72);
+      }
+
+      body[data-design-theme="apple"] .member-row,
+      body[data-design-theme="apple"] .people-row,
+      body[data-design-theme="apple"] .compact-table p,
+      body[data-design-theme="apple"] .current-work-list article,
+      body[data-design-theme="apple"] .validation-table p {
+        border-bottom-color: var(--console-line-soft);
+      }
+
+      body[data-design-theme="apple"] .member-row,
+      body[data-design-theme="apple"] .people-row {
+        background: transparent;
+        transition: background 140ms ease;
+      }
+
+      body[data-design-theme="apple"] .member-row:hover,
+      body[data-design-theme="apple"] .people-row:hover,
+      body[data-design-theme="apple"] .people-row.active {
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      body[data-design-theme="apple"] .person-avatar {
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.045);
+      }
+
+      body[data-design-theme="apple"] .type-pill,
+      body[data-design-theme="apple"] .person-kind,
+      body[data-design-theme="apple"] .flow-lane-row aside em,
+      body[data-design-theme="apple"] .graph-node em,
+      body[data-design-theme="apple"] .flow-current span,
+      body[data-design-theme="apple"] .workitem-status {
+        border-radius: 999px;
+      }
+
+      body[data-design-theme="apple"] .table-footer {
+        border-top-color: var(--console-line-soft);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      body[data-design-theme="apple"] .detail-tabs button.active {
+        border-color: var(--console-green);
+        color: var(--console-text);
+      }
+
+      body[data-design-theme="apple"] .flow-designer {
+        gap: 10px;
+        padding: 0 10px 16px;
+      }
+
+      body[data-design-theme="apple"] .designer-toolbar {
+        border-radius: 12px;
+      }
+
+      body[data-design-theme="apple"] .workflow-canvas-board {
+        overflow: hidden;
+        border-color: var(--console-line-soft);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: var(--console-shadow-soft);
+      }
+
+      body[data-design-theme="apple"] .flow-lane-row {
+        border-bottom-color: var(--console-line-soft);
+      }
+
+      body[data-design-theme="apple"] .flow-lane-row > aside {
+        background: rgba(250, 250, 252, 0.78);
+      }
+
+      body[data-design-theme="apple"] .lane-node-track {
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.28));
+      }
+
+      body[data-design-theme="apple"] .graph-node,
+      body[data-design-theme="apple"] .flow-node {
+        border-color: var(--console-line-soft);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.045);
+      }
+
+      body[data-design-theme="apple"] .graph-node:not(:last-child)::after,
+      body[data-design-theme="apple"] .mini-flow button:not(:last-child)::after {
+        background: rgba(60, 72, 67, 0.34);
+      }
+
+      body[data-design-theme="apple"] .graph-node.active,
+      body[data-design-theme="apple"] .flow-node.active,
+      body[data-design-theme="apple"] .flow-node:hover {
+        border-color: rgba(20, 119, 92, 0.55);
+        box-shadow: 0 0 0 3px rgba(20, 119, 92, 0.09), 0 16px 34px rgba(20, 119, 92, 0.11);
+      }
+
+      body[data-design-theme="apple"] .validation-line i {
+        box-shadow: 0 0 0 4px rgba(20, 119, 92, 0.08);
+      }
+
+      body[data-design-theme="apple"] .profile-tags b,
+      body[data-design-theme="apple"] .panel-head small,
+      body[data-design-theme="apple"] .side-command b {
+        border-radius: 999px;
+        background: rgba(118, 118, 128, 0.12);
+      }
+
+      @media (max-width: 1280px) {
+        body[data-design-theme="apple"] .app-shell,
+        body[data-design-theme="apple"] .app-shell.surface-dashboard {
+          grid-template-columns: 88px 224px minmax(760px, 1fr);
+        }
+      }
     </style>
   </head>
   <body data-design-theme="apple">

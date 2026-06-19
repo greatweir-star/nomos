@@ -11,6 +11,9 @@ implementation screenshot path:
 - /tmp/nomos-dashboard-reference-final.png
 - /tmp/nomos-organization-reference-final.png
 - /tmp/nomos-workflow-reference-final.png
+- /tmp/nomos-apple-after-dashboard-v2.png
+- /tmp/nomos-apple-after-directory.png
+- /tmp/nomos-apple-after-workflow.png
 
 viewport:
 - 1512 x 982
@@ -40,6 +43,7 @@ patches made since previous QA pass:
 - Converted workflow orchestration to a template sidebar, canvas editor, node inspector, and validation panel.
 - Fixed compact status labels so receipt states no longer stack vertically.
 - Simplified the primary rail into clear product areas: 控制台, 通讯录, 流程, 派发, 项目, 集成, 设置. Removed duplicate/ambiguous 话题 and 流程 entries from the first-level navigation.
+- Added an Apple refinement pass across the shell: softer macOS-style background material, subtler rail active states, rounded native-feeling controls, softened cards and tables, calmer shadows, and workflow nodes that no longer clip in the dashboard flow preview.
 
 verification:
 - node --check renderer/app.js passed.
