@@ -2,7 +2,7 @@
 
 nomos是一个本地优先的 Agent 项目指挥台。桌面客户端会在本机启动后端服务，并将项目、阶段、消息、本地 Agent 配对、执行记录和审计日志保存到当前用户的数据目录。
 
-产品目标、核心场景、信息架构、领域模型和分阶段范围见 [Nomos 产品需求文档](docs/NOMOS-PRD.md)。
+产品目标、核心场景、信息架构和范围见 [Nomos 产品需求文档](docs/NOMOS-PRD.md)。目标技术方案见 [Nomos 架构设计](docs/NOMOS-ARCHITECTURE.md)，实施顺序与里程碑见 [Nomos 开发规划](docs/NOMOS-DEVELOPMENT-PLAN.md)。
 
 ## 当前能力
 
