@@ -14,6 +14,7 @@ implementation screenshot path:
 - /tmp/nomos-apple-after-dashboard-v2.png
 - /tmp/nomos-apple-after-directory.png
 - /tmp/nomos-apple-after-workflow.png
+- /tmp/nomos-coding-dashboard-v2.png
 
 viewport:
 - 1512 x 982
@@ -44,8 +45,12 @@ patches made since previous QA pass:
 - Fixed compact status labels so receipt states no longer stack vertically.
 - Simplified the primary rail into clear product areas: 控制台, 通讯录, 流程, 派发, 项目, 集成, 设置. Removed duplicate/ambiguous 话题 and 流程 entries from the first-level navigation.
 - Added an Apple refinement pass across the shell: softer macOS-style background material, subtler rail active states, rounded native-feeling controls, softened cards and tables, calmer shadows, and workflow nodes that no longer clip in the dashboard flow preview.
+- Replaced dashboard demo metrics, queue items, receipts, employee workload, current flow, recent receipts, and adapter health with live API-backed values.
+- Connected dashboard refresh, employee search/type filtering, flow-stage selection, single dispatch, read-only batch dispatch, receipt review, and first-run project creation.
+- Removed misleading secondary-sidebar controls and fallback counts; the dashboard now reports real zero/empty states when no project or workflow exists.
 
 verification:
 - node --check renderer/app.js passed.
 - npm test passed with 51 tests.
 - Playwright local Chrome capture reported no console errors and no horizontal overflow.
+- Chrome DevTools interaction verification passed for all primary rail routes, the integrations modal, dashboard refresh, employee search, directory search, and first-run project creation.

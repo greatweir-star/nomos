@@ -7376,6 +7376,134 @@
         box-shadow: 0 0 0 4px rgba(20, 119, 92, 0.08);
       }
 
+      .metric-card {
+        width: 100%;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+      }
+
+      .metric-card:hover {
+        border-color: rgba(20, 119, 92, 0.3);
+        box-shadow: 0 10px 24px rgba(34, 45, 41, 0.08);
+        transform: translateY(-1px);
+      }
+
+      .metric-card:focus-visible,
+      .member-row:focus-visible,
+      .mini-flow button:focus-visible {
+        outline: 3px solid rgba(20, 119, 92, 0.2);
+        outline-offset: 1px;
+      }
+
+      .panel-filter {
+        min-width: 0;
+        width: 100%;
+        height: 34px;
+        padding: 0 26px 0 10px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 9px;
+        color: #28322f;
+        background: rgba(255, 255, 255, 0.84);
+        font: inherit;
+        font-size: 12px;
+      }
+
+      .icon-button .icon,
+      .panel-link .icon,
+      .current-work-list .icon {
+        width: 15px;
+        height: 15px;
+      }
+
+      .icon-button.is-loading .icon {
+        animation: dashboard-spin 720ms linear infinite;
+      }
+
+      @keyframes dashboard-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .dashboard-empty-row {
+        min-height: 54px;
+        margin: 0;
+        padding: 18px 14px;
+        border-bottom: 1px solid var(--console-line-soft);
+        color: var(--console-muted);
+        font-size: 12px;
+      }
+
+      .dashboard-empty-row.flow-empty {
+        min-height: 92px;
+        padding: 32px 16px;
+        text-align: center;
+      }
+
+      .dashboard-empty-state {
+        display: grid;
+        min-height: 128px;
+        place-content: center;
+        justify-items: center;
+        gap: 8px;
+        padding: 22px;
+        color: var(--console-muted);
+        text-align: center;
+      }
+
+      .dashboard-empty-state.large {
+        min-height: 430px;
+      }
+
+      .dashboard-empty-state strong {
+        color: #2a3531;
+        font-size: 13px;
+      }
+
+      .dashboard-empty-state p {
+        max-width: 270px;
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      .queue-table p {
+        grid-template-columns: 20px minmax(98px, 1fr) 62px 44px 60px;
+        gap: 6px;
+      }
+
+      .queue-table input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        accent-color: var(--console-green);
+      }
+
+      .compact-table .low {
+        color: #66716c;
+        background: #edf0ee;
+      }
+
+      .compact-table p > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .panel-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.48;
+        box-shadow: none !important;
+      }
+
       body[data-design-theme="apple"] .profile-tags b,
       body[data-design-theme="apple"] .panel-head small,
       body[data-design-theme="apple"] .side-command b {
@@ -7635,6 +7763,8 @@
       <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15"></path><path d="M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15"></path></symbol>
       <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></symbol>
       <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"></path><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"></path></symbol>
+      <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></symbol>
     </svg>
     <script src="/app.js"></script>
   </body>
