@@ -6,6 +6,77 @@
   "author": "nomos",
   "license": "UNLICENSED",
   "private": true,
+  "scripts": {
+    "start": "npm run build && electron .",
+    "start:v1": "npm run build && electron .",
+    "start:legacy": "electron . --renderer-legacy",
+    "start:server": "node scripts/start-server.js",
+    "start:server:v1": "npm run build && node --experimental-sqlite scripts/start-server-v1.js",
+    "dev:ui": "vite",
+    "build": "npm run build:ts && npm run build:ui",
+    "build:ts": "tsc -p tsconfig.json",
+    "build:ui": "vite build",
+    "typecheck": "npm run typecheck:ts && npm run typecheck:ui",
+    "typecheck:ts": "tsc -p tsconfig.json --noEmit",
+    "typecheck:ui": "tsc -p tsconfig.ui.json",
+    "test": "npm run test:legacy && npm run test:v1",
+    "test:legacy": "node --test tests/*.test.js",
+    "test:v1": "npm run build:ts && node --experimental-sqlite --test tests/unit/*.test.js tests/integration/*.test.js",
+    "release:check": "npm run typecheck && npm test && npm run build && node scripts/release-check.js",
+    "dist:mac": "npm run build && NOMOS_ADHOC_SIGN=1 electron-builder --mac dmg zip --arm64",
+    "dist:win": "npm run build && electron-builder --win zip --x64 -c.win.signAndEditExecutable=false",
+    "dist:win:portable": "npm run build && electron-builder --win portable --x64",
+    "dist:dir": "npm run build && electron-builder --dir"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "electron": "42.3.0",
+    "electron-builder": "26.0.12",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "build": {
+    "appId": "cn.nomos.desktop",
+    "productName": "Nomos",
+    "artifactName": "Nomos-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "backend/**/*",
+      "build/icon.png",
+      "dist-ts/**/*",
+      "docs/**/*",
+      "electron/**/*",
+      "renderer/**/*",
+      "renderer-v2/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "afterPack": "scripts/after-pack.js",
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "target": [
+        { "target": "dmg", "arch": ["arm64"] },
+        { "target": "zip", "arch": ["arm64"] }
+      ]
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  },
   "dependencies": {
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

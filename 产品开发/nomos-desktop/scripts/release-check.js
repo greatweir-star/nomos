@@ -6,6 +6,9 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const failures = [];
+if (!pkg.scripts?.["release:check"] || !pkg.devDependencies?.electron || !pkg.build?.files) {
+  failures.push("package.json 缺少开发、验证或打包配置");
+}
 const requireFile = (relative) => {
   const file = path.join(root, relative);
   if (!fs.existsSync(file) || !fs.statSync(file).isFile() || fs.statSync(file).size === 0) failures.push(`缺少发布文件：${relative}`);
