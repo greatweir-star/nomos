@@ -4,3 +4,5 @@ release/
 .edge-debug/
 screenshots/
 build/electron-cache/
+dist-ts/
+renderer-v2/

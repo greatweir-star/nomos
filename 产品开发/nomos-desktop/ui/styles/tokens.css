@@ -1,0 +1,81 @@
+:root {
+  --bg: #eef1ed;
+  --paper: #fffefa;
+  --paper-soft: #f8faf7;
+  --ink: #17231f;
+  --muted: #71807b;
+  --line: #dde4df;
+  --line-strong: #ccd7d1;
+  --green: #28644f;
+  --green-soft: #e0eee7;
+  --sage: #b6c8bd;
+  --amber: #c48b3c;
+  --amber-soft: #f6ecd9;
+  --red: #c25e51;
+  --red-soft: #f7e7e2;
+  --blue: #5f7590;
+  --blue-soft: #e7edf2;
+  --shadow: 0 20px 64px rgba(28, 50, 43, 0.12);
+  --shadow-soft: 0 7px 22px rgba(31, 56, 48, 0.07);
+  --primary: var(--green);
+  --primary-soft: var(--green-soft);
+  --surface: var(--paper-soft);
+  --card: var(--paper);
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --text: var(--ink);
+
+  --nav-width: 200px;
+  --nav-width-collapsed: 56px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  color: var(--ink);
+  background: var(--bg);
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, textarea, select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

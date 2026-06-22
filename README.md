@@ -2,10 +2,12 @@
 
 Nomos 是面向中小企业和 OPC 的流程驱动型智能操作系统。本目录按产品生命周期整理，避免产品资料、开发过程、正式发布和参考源码混在一起。
 
+> 从 V0.0.3 起，项目治理、版本基线、研发任务和验收材料统一从 [`项目管理/README.md`](项目管理/README.md) 进入。历史资料保留原位，通过资料台账分类管理。
+
 ## 目录结构
 
 ```text
-D:\Alice\Projects\nomos
+nomos
 ├─ 产品规划
 │  ├─ 00-产品理念
 │  ├─ 01-调研资料
@@ -20,6 +22,7 @@ D:\Alice\Projects\nomos
 │  └─ 中间数据
 ├─ 产品发布
 │  ├─ v1.3.0
+│  ├─ V0.0.3
 │  ├─ v1.2.0
 │  ├─ v1.1.0
 │  ├─ v1.0.1
@@ -37,10 +40,10 @@ D:\Alice\Projects\nomos
 
 ## 当前开发入口
 
-```powershell
-cd D:\Alice\Projects\nomos\产品开发\nomos-desktop
-npm test
+```shell
+cd 产品开发/nomos-desktop
+npm run release:check
 npm run dist:win
 ```
 
-打包后的正式版本应归档到 `产品发布`，不要长期停留在开发源码目录。
+V0.0.3 候选制品和发布材料已归档到 `产品发布/V0.0.3`。正式公网版本仍须通过 Windows 实机回归和 macOS Developer ID 签名、公证门禁。

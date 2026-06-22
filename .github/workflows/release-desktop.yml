@@ -1,0 +1,121 @@
+name: Release Nomos Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: 产品开发/nomos-desktop
+    env:
+      CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: 产品开发/nomos-desktop/package-lock.json
+      - name: Verify signing credentials
+        shell: bash
+        run: |
+          test -n "$CSC_LINK"
+          test -n "$CSC_KEY_PASSWORD"
+          test -n "$APPLE_ID"
+          test -n "$APPLE_APP_SPECIFIC_PASSWORD"
+          test -n "$APPLE_TEAM_ID"
+      - run: npm ci
+      - run: npm run release:check
+      - name: Build, sign and notarize
+        run: npm run build && npx electron-builder --mac dmg zip --arm64 --publish never
+      - name: Verify application and Gatekeeper assessment
+        shell: bash
+        run: |
+          codesign --verify --deep --strict release/mac-arm64/Nomos.app
+          spctl --assess --type execute --verbose=2 release/mac-arm64/Nomos.app
+          xcrun stapler validate release/mac-arm64/Nomos.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nomos-macos
+          path: |
+            产品开发/nomos-desktop/release/Nomos-*-mac-arm64.dmg
+            产品开发/nomos-desktop/release/Nomos-*-mac-arm64.zip
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: 产品开发/nomos-desktop
+    env:
+      WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+      WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: 产品开发/nomos-desktop/package-lock.json
+      - name: Verify signing credentials
+        shell: bash
+        run: |
+          test -n "$WIN_CSC_LINK"
+          test -n "$WIN_CSC_KEY_PASSWORD"
+      - run: npm ci
+      - run: npm run release:check
+      - name: Build and sign
+        run: npm run build && npx electron-builder --win zip portable --x64 --publish never
+      - name: Smoke test packaged application
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "release/win-unpacked/Nomos.exe" -PassThru
+          $health = $null
+          for ($attempt = 0; $attempt -lt 30; $attempt++) {
+            if ($process.HasExited) { throw "Nomos exited during Windows smoke test." }
+            $listener = Get-NetTCPConnection -OwningProcess $process.Id -State Listen -ErrorAction SilentlyContinue |
+              Where-Object { $_.LocalAddress -eq "127.0.0.1" } |
+              Select-Object -First 1
+            if ($listener) {
+              $health = Invoke-RestMethod "http://127.0.0.1:$($listener.LocalPort)/api/v1/health"
+              break
+            }
+            Start-Sleep -Seconds 1
+          }
+          if (-not $health -or $health.data.version -ne "0.0.3") { throw "Nomos health check failed." }
+          Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nomos-windows
+          path: |
+            产品开发/nomos-desktop/release/Nomos-*-win-x64.zip
+            产品开发/nomos-desktop/release/Nomos-*-win-x64.exe
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Generate checksums
+        run: cd artifacts && sha256sum Nomos-* > SHA256SUMS.txt
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/* --verify-tag --generate-notes --title "Nomos ${GITHUB_REF_NAME#v}"

@@ -7,13 +7,22 @@ const { createNomosServer } = require("../backend/server");
 let backend;
 let mainWindow;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
+const useRendererV2 = !process.argv.includes("--renderer-legacy") && process.env.NOMOS_RENDERER !== "legacy";
 
 if (!hasSingleInstanceLock) app.quit();
 
 async function createWindow() {
-  backend = createNomosServer({
-    dataDir: path.join(app.getPath("userData"), "data"),
-  });
+  if (useRendererV2) {
+    const { createNomosServerV1 } = require("../dist-ts/server");
+    backend = createNomosServerV1({
+      dataDir: path.join(app.getPath("userData"), "data-v1"),
+      rendererDir: path.join(__dirname, "..", "renderer-v2"),
+    });
+  } else {
+    backend = createNomosServer({
+      dataDir: path.join(app.getPath("userData"), "data"),
+    });
+  }
   const address = await backend.start();
 
   mainWindow = new BrowserWindow({
@@ -21,7 +30,7 @@ async function createWindow() {
     height: 980,
     minWidth: 1120,
     minHeight: 760,
-    title: "nomos",
+    title: useRendererV2 ? "Nomos V0.0.3" : "nomos",
     icon: path.join(__dirname, "..", "build", "icon.png"),
     backgroundColor: "#f4f2ed",
     autoHideMenuBar: true,
@@ -29,8 +38,12 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
+
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
