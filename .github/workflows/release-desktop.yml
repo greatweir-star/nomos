@@ -2,7 +2,10 @@ name: Release Nomos Desktop
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
+    branches:
+      - "codex/v0.0.3-release"
     tags:
       - "v*"
 
@@ -21,6 +24,7 @@ jobs:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      NOMOS_ADHOC_SIGN: ${{ startsWith(github.ref, 'refs/tags/v') && '' || '1' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +33,7 @@ jobs:
           cache: npm
           cache-dependency-path: 产品开发/nomos-desktop/package-lock.json
       - name: Verify signing credentials
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
           test -n "$CSC_LINK"
@@ -40,10 +45,14 @@ jobs:
       - run: npm run release:check
       - name: Build, sign and notarize
         run: npm run build && npx electron-builder --mac dmg zip --arm64 --publish never
-      - name: Verify application and Gatekeeper assessment
+      - name: Verify application signature structure
         shell: bash
         run: |
           codesign --verify --deep --strict release/mac-arm64/Nomos.app
+      - name: Verify Gatekeeper and notarization
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
           spctl --assess --type execute --verbose=2 release/mac-arm64/Nomos.app
           xcrun stapler validate release/mac-arm64/Nomos.app
       - uses: actions/upload-artifact@v4
@@ -70,6 +79,7 @@ jobs:
           cache: npm
           cache-dependency-path: 产品开发/nomos-desktop/package-lock.json
       - name: Verify signing credentials
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
           test -n "$WIN_CSC_LINK"
