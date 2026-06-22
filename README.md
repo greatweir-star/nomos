@@ -46,4 +46,4 @@ npm run release:check
 npm run dist:win
 ```
 
-V0.0.3 候选制品和发布材料已归档到 `产品发布/V0.0.3`。正式公网版本仍须通过 Windows 实机回归和 macOS Developer ID 签名、公证门禁。
+V0.0.3 macOS 候选制品和发布材料已归档到 `产品发布/V0.0.3`。正式公网版本仍须通过 Developer ID 签名和 Apple 公证门禁；Windows 暂不进入本版本发布范围。

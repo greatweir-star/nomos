@@ -16,16 +16,13 @@ describe("release/config", () => {
     assert.match(main, /setPermissionRequestHandler/);
   });
 
-  it("发布配置包含 macOS、Windows、V1 产物和正式图标", () => {
+  it("发布配置包含 macOS Apple Silicon、V1 产物和正式图标", () => {
     const pkg = require(path.join(root, "package.json"));
     assert.strictEqual(pkg.version, "0.0.3");
     assert.strictEqual(pkg.build.productName, "Nomos");
     assert.ok(pkg.build.files.includes("dist-ts/**/*"));
     assert.ok(pkg.build.files.includes("renderer-v2/**/*"));
     assert.ok(pkg.build.mac.target.some((target) => target.target === "dmg"));
-    assert.ok(pkg.build.win.target.some((target) => target.target === "zip"));
-    assert.equal(pkg.build.win.icon, "build/icon.png");
-    assert.match(pkg.scripts["dist:win"], /signAndEditExecutable=false/);
     assert.equal(pkg.build.afterPack, "scripts/after-pack.js");
     const icon = fs.readFileSync(path.join(root, "build/icon.png"));
     assert.deepStrictEqual([...icon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);

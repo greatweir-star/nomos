@@ -1,6 +1,6 @@
 # Nomos V0.0.3 版本交付包
 
-> 版本状态：Sprint 1–6 完成，内部候选发布通过；等待 Windows 实机回归与 macOS 公证  
+> 版本状态：Sprint 1–6 完成，macOS 内部候选发布通过；等待签名与 Apple 公证  
 > 规划日期：2026-06-21  
 > 计划周期：2026-06-22 至 2026-09-13（6 个双周迭代）  
 > 核心需求源：[`NOMOS-PRD.md`](../../../产品开发/nomos-desktop/docs/NOMOS-PRD.md)

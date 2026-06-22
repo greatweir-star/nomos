@@ -36,7 +36,7 @@ npm run dist:mac
 npm run dist:win
 ```
 
-制品输出到 `release` 目录。macOS 生成 DMG/ZIP（Apple Silicon），Windows 生成可解压运行的 x64 ZIP。Windows 构建机也可运行 `npm run dist:win:portable` 生成单文件便携版。
+V0.0.3 当前只发布 macOS Apple Silicon 制品，输出为 `release` 目录中的 DMG/ZIP。Windows 打包脚本仅保留作后续版本准备，不进入本次发布与验收范围。
 
 ## 数据目录
 

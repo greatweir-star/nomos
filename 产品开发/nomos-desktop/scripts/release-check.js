@@ -16,6 +16,8 @@ const requireFile = (relative) => {
 
 if (pkg.version !== "0.0.3") failures.push(`版本号应为 0.0.3，当前为 ${pkg.version}`);
 if (pkg.build?.productName !== "Nomos") failures.push("productName 必须为 Nomos");
+const macTargets = (pkg.build?.mac?.target || []).map((item) => item.target);
+if (!macTargets.includes("dmg") || !macTargets.includes("zip")) failures.push("macOS 发布目标必须包含 DMG 和 ZIP");
 for (const file of ["dist-ts/server/index.js", "renderer-v2/index.html", "build/icon.png", "build/icon.svg", "electron/main.js"]) requireFile(file);
 
 const rendererFiles = fs.existsSync(path.join(root, "renderer-v2", "assets"))
